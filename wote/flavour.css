@@ -1,0 +1,39 @@
+/* Core structure classes */
+.note-area {
+    padding: 20px;
+}
+
+/* The actual note container */
+.note {
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    position: relative; /* Essential for positioning the 'root' line */
+}
+
+/* The visual nesting/indentation is done here */
+.replies {
+    margin-left: 20px; /* Adjust this value for nesting depth */
+    /* Add the Willow 'root' line visually here */
+    border-left: 2px solid #A4C639; /* Example Willow Green */
+    padding-left: 10px;
+}
+
+.note-content {
+    background-color: #f0fff0; /* Light green/cream for Willow theme */
+    padding: 8px 10px;
+    border-radius: 5px;
+}
+
+.reply-button, .save-button {
+    font-size: 0.8em;
+    cursor: pointer;
+    margin-right: 10px;
+    color: #4B5320; /* Darker Willow Green */
+}
+
+/* Style for the temporary input/reply box */
+.reply-form {
+    margin-top: 5px;
+    margin-bottom: 10px;
+    padding: 5px 0;
+}
