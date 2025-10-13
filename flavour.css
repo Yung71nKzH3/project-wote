@@ -1,0 +1,9 @@
+.note-area { padding: 20px; font-family: sans-serif; }
+
+.note { margin-bottom: 15px; border-left: 2px solid #ccc; padding-left: 10px; }
+
+.note-content { border: 1px solid #ddd; padding: 10px; margin-bottom: 5px; background-color: #f9f9f9; }
+
+.replies { margin-left: 20px; } /* This creates the visual indentation/nesting */
+
+.reply-button { cursor: pointer; color: green; font-size: 0.9em; }
