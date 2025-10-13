@@ -21,6 +21,22 @@
 <body>
 
     <main>
+        <div id="app-header">
+            <button id="menu-btn">⚙️</button>
+        </div>
+
+        <div id="app-menu" style="display: none;">
+            <h3>App Settings & Data</h3>
+            <p>Current Note ID: <span id="current-note-id"></span></p>
+
+            <button id="export-btn">Export to .txt</button><br>
+            <input type="file" id="import-file" accept=".txt" style="display:none;">
+            <button id="import-btn">Import from .txt (Clear Current)</button>
+            
+            <hr>
+            <label>Theme: <select id="theme-selector"><option value="willow">Willow (Default)</option></select></label>
+            <p><button id="close-menu-btn">Close</button></p>
+        </div>
         <div class="note-area" id="note-container">
         </div>
     </main>
