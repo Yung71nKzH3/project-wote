@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="author" content="Leonardo Paolo Valenti">
+  <meta name="generator" content="Visual Studio Code">
+  <meta name="description" content="project-wote a note taking app in my personal favourite interactive format">
+  <meta name="revised" content="2025-10-13">
+  <meta name="robots" content="index, follow">
+
+  <link rel="stylesheet" href="flavour.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap">
+  <link rel="canonical" href="https://zedf.co.uk/wote">
+  <script src="script.js" defer></script>
+  <title>Wote</title>
+</head>
+<body>
+
+    <main>
+        <div id="app-header">
+            <button id="menu-btn">⚙️</button>
+        </div>
+
+        <div id="app-menu" style="display: none;">
+            <h3>App Settings & Data</h3>
+            <p>Current Note ID: <span id="current-note-id"></span></p>
+
+            <button id="export-btn">Export to .txt</button><br>
+            <input type="file" id="import-file" accept=".wote, application/json" style="display:none;">
+            <button id="import-btn">Import from .txt (Clear Current)</button>
+            
+            <hr>
+            <label>Theme: 
+                <select id="theme-selector">
+                    <option value="willow-theme">Willow (Default)</option>
+                    <option value="dark-theme">Dark Theme</option> 
+                    <option value="custom-theme">Custom Theme</option>
+                </select>
+            </label>
+            
+            <hr>
+
+            <div id="custom-theme-builder" style="display: none;">
+                <h4>Customize Colors</h4>
+                <label>Background: <input type="color" id="color-bg"></label><br>
+                <label>Text: <input type="color" id="color-text"></label><br>
+                <label>Branch Line: <input type="color" id="color-line"></label><br>
+                <button id="save-custom-theme-btn">Save As Custom</button>
+            </div>
+            <p><button id="close-menu-btn">Close</button></p>
+        </div>
+        <div class="note-area" id="note-container">
+        </div>
+    </main>
+    
+</body>
+</html>

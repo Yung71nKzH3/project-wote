@@ -1,0 +1,138 @@
+/* ---------------------------------------------------- */
+/* 1. CSS Variables (Custom Properties) Definitions     */
+/* ---------------------------------------------------- */
+
+/* Root element defines the variables used by all themes */
+:root {
+    /* **NEW "SWAMP WILLOW" THEME DEFAULTS** */
+    --main-bg: #2C3424;       
+    --main-text: #DADED8;       
+    --branch-line: #959581; 
+    --note-bg: #768064;         
+    --input-focus: #4C583E;      
+}
+
+/* ---------------------------------------------------- */
+/* 2. BASE STRUCTURE (Uses Variables)                   */
+/* ---------------------------------------------------- */
+
+.note-area {
+    padding: 20px;
+}
+
+.note {
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    position: relative;
+}
+
+body {
+    font-family: 'Libre Baskerville', serif; 
+    transition: background-color 0.3s, color 0.3s;
+    /* Base colors MUST use variables */
+    background-color: var(--main-bg); 
+    color: var(--main-text); 
+}
+
+.note-content {
+    padding: 8px 10px;
+    border-radius: 5px;
+    /* Base colors MUST use variables */
+    background-color: var(--note-bg);
+    color: var(--main-text);
+    
+    outline: none;
+    min-height: 1.2em;
+}
+
+.note-content:focus {
+    /* Uses variable */
+    box-shadow: 0 0 0 2px var(--input-focus);
+}
+
+.replies {
+    margin-left: 20px;
+    /* Uses variable */
+    border-left: 2px solid var(--branch-line); 
+    padding-left: 10px;
+}
+
+.reply-button, .save-button {
+    font-size: 0.8em;
+    cursor: pointer;
+    margin-right: 10px;
+    /* Uses variable */
+    color: var(--main-text); 
+}
+
+/* ---------------------------------------------------- */
+/* 3. THEME BLOCKS (Sets Variables via Classes)         */
+/* ---------------------------------------------------- */
+
+/* Willow Default Theme - Applies the new swampy defaults */
+.willow-theme {
+    background-color: var(--main-bg);
+    color: var(--main-text);
+}
+
+/* Dark Theme Overrides - Remains the same */
+.dark-theme {
+    --main-bg: #1e1e1e;          
+    --main-text: #e0e0e0;        
+    --branch-line: #777;         
+    --note-bg: #333333;          
+    --input-focus: #555; 
+    
+    background-color: var(--main-bg);
+    color: var(--main-text);
+}
+
+/* Custom Theme Block */
+.custom-theme {
+    background-color: var(--main-bg);
+    color: var(--main-text);
+}
+
+
+/* ---------------------------------------------------- */
+/* 4. MENU/HEADER STYLING (ISOLATED COLORS)             */
+/* ---------------------------------------------------- */
+
+#app-header {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+}
+
+#menu-btn {
+    background: #4B5320; 
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+#app-menu {
+    position: fixed;
+    top: 50px;
+    right: 10px;
+    width: 300px;
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(5px);
+    border: 1px solid #c8c8c8; 
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 999;
+    transition: opacity 0.3s ease;
+    color: #333; 
+}
+
+#app-menu h3, #app-menu p, #app-menu label {
+    color: #333; 
+}
