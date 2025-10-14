@@ -4,19 +4,18 @@
 
 /* Root element defines the variables used by all themes */
 :root {
-    /* Willow Theme Defaults (These are the initial values) */
-    --main-bg: #f0fff0;          /* Background color */
-    --main-text: #4B5320;        /* Text color */
-    --branch-line: #A4C639;      /* Hierarchy line color */
-    --note-bg: #fff;             /* Note background color */
-    --input-focus: #ddf;         /* Focus highlight color */
+    /* **NEW "SWAMP WILLOW" THEME DEFAULTS** */
+    --main-bg: #2C3424;       
+    --main-text: #DADED8;       
+    --branch-line: #959581; 
+    --note-bg: #768064;         
+    --input-focus: #4C583E;      
 }
 
 /* ---------------------------------------------------- */
 /* 2. BASE STRUCTURE (Uses Variables)                   */
 /* ---------------------------------------------------- */
 
-/* The main note container */
 .note-area {
     padding: 20px;
 }
@@ -27,11 +26,10 @@
     position: relative;
 }
 
-/* Base Body Style - APPLIED FIXES HERE */
 body {
     font-family: 'Libre Baskerville', serif; 
     transition: background-color 0.3s, color 0.3s;
-    /* CRITICAL FIX: Base colors MUST use variables */
+    /* Base colors MUST use variables */
     background-color: var(--main-bg); 
     color: var(--main-text); 
 }
@@ -39,7 +37,7 @@ body {
 .note-content {
     padding: 8px 10px;
     border-radius: 5px;
-    /* CRITICAL FIX: Base colors MUST use variables */
+    /* Base colors MUST use variables */
     background-color: var(--note-bg);
     color: var(--main-text);
     
@@ -52,7 +50,6 @@ body {
     box-shadow: 0 0 0 2px var(--input-focus);
 }
 
-/* The visual nesting/indentation */
 .replies {
     margin-left: 20px;
     /* Uses variable */
@@ -72,26 +69,25 @@ body {
 /* 3. THEME BLOCKS (Sets Variables via Classes)         */
 /* ---------------------------------------------------- */
 
-/* Willow Default Theme - Already correct */
+/* Willow Default Theme - Applies the new swampy defaults */
 .willow-theme {
     background-color: var(--main-bg);
     color: var(--main-text);
 }
 
-/* Dark Theme Overrides - Already correct */
+/* Dark Theme Overrides - Remains the same */
 .dark-theme {
-    /* Overrides the default variables for a dark look */
     --main-bg: #1e1e1e;          
     --main-text: #e0e0e0;        
     --branch-line: #777;         
     --note-bg: #333333;          
-    --input-focus: #999; 
+    --input-focus: #555; 
     
     background-color: var(--main-bg);
     color: var(--main-text);
 }
 
-/* Custom Theme Block - Already correct */
+/* Custom Theme Block */
 .custom-theme {
     background-color: var(--main-bg);
     color: var(--main-text);
@@ -99,7 +95,7 @@ body {
 
 
 /* ---------------------------------------------------- */
-/* 4. MENU/HEADER STYLING (Not theme-dependent)         */
+/* 4. MENU/HEADER STYLING (ISOLATED COLORS)             */
 /* ---------------------------------------------------- */
 
 #app-header {
@@ -126,16 +122,17 @@ body {
     top: 50px;
     right: 10px;
     width: 300px;
-    background-color: rgba(255, 255, 255, 0.85);
+    background-color: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(5px);
-    border: 1px solid rgba(164, 198, 57, 0.5);
+    border: 1px solid #c8c8c8; 
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 999;
     transition: opacity 0.3s ease;
+    color: #333; 
 }
 
 #app-menu h3, #app-menu p, #app-menu label {
-    color: var(--main-text);
+    color: #333; 
 }
