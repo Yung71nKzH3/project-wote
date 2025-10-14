@@ -32,7 +32,7 @@ function loadThemeCustomizations() {
     applyTheme(CURRENT_THEME);
 }
 
-// 💡 FIX APPLIED HERE
+// FIX: Corrected applyTheme function
 function applyTheme(themeName) {
     const root = document.documentElement; 
     
@@ -89,7 +89,7 @@ function handleURLAndStorage() {
 }
 
 
-// --- Import/Export Logic (Unchanged) ---
+// --- Import/Export Logic ---
 
 function exportToTxt(notes) {
     let txtContent = '';
@@ -106,19 +106,11 @@ function exportToTxt(notes) {
     return txtContent.trim();
 }
 
-/**
- * Downloads the notes as a TXT file, naming it after the content of the first root note.
- */
 function handleExport() {
-    // 1. Get the content of the very first note
+    // Filename logic
     let fileNameContent = notesData[0] ? notesData[0].content : 'willow-notes';
-    
-    // 2. Clean the content for use as a filename:
-    //    - Replace illegal characters (like slashes, colons, etc.) with a hyphen.
-    //    - Trim whitespace.
-    //    - Fallback to 'willow-notes' if the content is empty.
     let safeFileName = fileNameContent
-        .replace(/[\\/:*?"<>|]/g, '-') // Remove illegal file characters
+        .replace(/[\\/:*?"<>|]/g, '-') 
         .trim();
         
     if (!safeFileName) {
@@ -131,7 +123,6 @@ function handleExport() {
     
     const a = document.createElement('a');
     a.href = url;
-    // 3. Use the cleaned-up root content for the filename
     a.download = `${safeFileName}.txt`; 
     
     document.body.appendChild(a);
@@ -271,7 +262,6 @@ function decreaseNoteDepth(noteId) {
     
     const { note, parentArray } = noteResult;
     
-    // Deletion Logic
     if (parentArray === notesData) {
         deleteNote(noteId); 
         return;
@@ -328,7 +318,6 @@ function deleteNote(noteId) {
     const { note, parentArray } = result;
     const index = parentArray.findIndex(n => n.id === noteId);
 
-    // 1. Check if the note is the very first root note
     if (parentArray === notesData && index === 0) {
         note.content = ''; 
         saveNotes();
@@ -336,7 +325,6 @@ function deleteNote(noteId) {
         return; 
     } 
     
-    // 2. Core Deletion and Re-parenting Logic
     if (index !== -1) {
         const children = note.children; 
         parentArray.splice(index, 1);
@@ -349,7 +337,6 @@ function deleteNote(noteId) {
     saveNotes();
     renderAllNotes();
 
-    // After deletion, attempt to focus the previous or next note
     setTimeout(() => {
         const focusNote = parentArray[index] || parentArray[index - 1]; 
         if (focusNote) {
@@ -410,11 +397,7 @@ function renderAllNotes() {
 
 // --- KEYBOARD INTERACTION HANDLER ---
 
-/**
- * Handles Up/Down arrow key navigation between notes.
- */
 function handleArrowNavigation(event, direction) {
-    // Save current note content before shifting focus
     saveCurrentNote(); 
     
     let targetNoteEl;
@@ -437,7 +420,6 @@ function handleArrowNavigation(event, direction) {
         event.preventDefault();
         targetNoteEl.focus();
         
-        // Move cursor to the end of the line on focus
         if (window.getSelection && document.createRange) {
             const range = document.createRange();
             range.selectNodeContents(targetNoteEl);
@@ -548,7 +530,6 @@ function setupCustomThemeListeners() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 💡 IMPORTANT: Load everything here
     loadNotes(); 
     
     // Menu Logic

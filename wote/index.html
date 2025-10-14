@@ -34,12 +34,23 @@
             <button id="import-btn">Import from .txt (Clear Current)</button>
             
             <hr>
-                <label>Theme: 
-                    <select id="theme-selector">
-                        <option value="willow-theme">Willow (Default)</option>
-                        <option value="dark-theme">Dark Theme</option> 
-                    </select>
-                </label>
+            <label>Theme: 
+                <select id="theme-selector">
+                    <option value="willow-theme">Willow (Default)</option>
+                    <option value="dark-theme">Dark Theme</option> 
+                    <option value="custom-theme">Custom Theme</option>
+                </select>
+            </label>
+            
+            <hr>
+
+            <div id="custom-theme-builder" style="display: none;">
+                <h4>Customize Colors</h4>
+                <label>Background: <input type="color" id="color-bg"></label><br>
+                <label>Text: <input type="color" id="color-text"></label><br>
+                <label>Branch Line: <input type="color" id="color-line"></label><br>
+                <button id="save-custom-theme-btn">Save As Custom</button>
+            </div>
             <p><button id="close-menu-btn">Close</button></p>
         </div>
         <div class="note-area" id="note-container">

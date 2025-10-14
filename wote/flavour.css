@@ -1,57 +1,119 @@
-/* Core structure classes */
+/* ---------------------------------------------------- */
+/* 1. CSS Variables (Custom Properties) Definitions     */
+/* ---------------------------------------------------- */
+
+/* Root element defines the variables used by all themes */
+:root {
+    /* Willow Theme Defaults (These are the initial values) */
+    --main-bg: #f0fff0;          /* Background color */
+    --main-text: #4B5320;        /* Text color */
+    --branch-line: #A4C639;      /* Hierarchy line color */
+    --note-bg: #fff;             /* Note background color */
+    --input-focus: #ddf;         /* Focus highlight color */
+}
+
+/* ---------------------------------------------------- */
+/* 2. BASE STRUCTURE (Uses Variables)                   */
+/* ---------------------------------------------------- */
+
+/* The main note container */
 .note-area {
     padding: 20px;
 }
 
-/* The actual note container */
 .note {
     margin-bottom: 10px;
     padding-bottom: 5px;
-    position: relative; /* Essential for positioning the 'root' line */
+    position: relative;
 }
 
-/* The visual nesting/indentation is done here */
-.replies {
-    margin-left: 20px; /* Adjust this value for nesting depth */
-    /* Add the Willow 'root' line visually here */
-    border-left: 2px solid #A4C639; /* Example Willow Green */
-    padding-left: 10px;
+/* Base Body Style - APPLIED FIXES HERE */
+body {
+    font-family: 'Libre Baskerville', serif; 
+    transition: background-color 0.3s, color 0.3s;
+    /* CRITICAL FIX: Base colors MUST use variables */
+    background-color: var(--main-bg); 
+    color: var(--main-text); 
 }
 
 .note-content {
-    background-color: #f0fff0; /* Light green/cream for Willow theme */
     padding: 8px 10px;
     border-radius: 5px;
+    /* CRITICAL FIX: Base colors MUST use variables */
+    background-color: var(--note-bg);
+    color: var(--main-text);
+    
+    outline: none;
+    min-height: 1.2em;
+}
+
+.note-content:focus {
+    /* Uses variable */
+    box-shadow: 0 0 0 2px var(--input-focus);
+}
+
+/* The visual nesting/indentation */
+.replies {
+    margin-left: 20px;
+    /* Uses variable */
+    border-left: 2px solid var(--branch-line); 
+    padding-left: 10px;
 }
 
 .reply-button, .save-button {
     font-size: 0.8em;
     cursor: pointer;
     margin-right: 10px;
-    color: #4B5320; /* Darker Willow Green */
+    /* Uses variable */
+    color: var(--main-text); 
 }
 
-/* Style for the temporary input/reply box */
-.reply-form {
-    margin-top: 5px;
-    margin-bottom: 10px;
-    padding: 5px 0;
+/* ---------------------------------------------------- */
+/* 3. THEME BLOCKS (Sets Variables via Classes)         */
+/* ---------------------------------------------------- */
+
+/* Willow Default Theme - Already correct */
+.willow-theme {
+    background-color: var(--main-bg);
+    color: var(--main-text);
 }
 
-/* 1. Header and Button Positioning */
+/* Dark Theme Overrides - Already correct */
+.dark-theme {
+    /* Overrides the default variables for a dark look */
+    --main-bg: #1e1e1e;          
+    --main-text: #e0e0e0;        
+    --branch-line: #777;         
+    --note-bg: #333333;          
+    --input-focus: #999; 
+    
+    background-color: var(--main-bg);
+    color: var(--main-text);
+}
+
+/* Custom Theme Block - Already correct */
+.custom-theme {
+    background-color: var(--main-bg);
+    color: var(--main-text);
+}
+
+
+/* ---------------------------------------------------- */
+/* 4. MENU/HEADER STYLING (Not theme-dependent)         */
+/* ---------------------------------------------------- */
+
 #app-header {
-    position: fixed; /* Keep it in the same spot while scrolling */
+    position: fixed;
     top: 10px;
     right: 10px;
-    z-index: 1000; /* Ensure it floats above everything else */
+    z-index: 1000;
 }
 
 #menu-btn {
-    /* Style the button minimally, like a subtle circle */
-    background: #4B5320; /* Darker Willow Green */
+    background: #4B5320; 
     color: white;
     border: none;
-    border-radius: 50%; /* Make it circular */
+    border-radius: 50%;
     width: 40px;
     height: 40px;
     font-size: 1.2em;
@@ -59,46 +121,21 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-/* 2. Menu Panel Styling (The "Pip" Window) */
 #app-menu {
-    position: fixed; /* Keep it anchored to the screen */
-    top: 50px; /* Position it below the button */
+    position: fixed;
+    top: 50px;
     right: 10px;
     width: 300px;
-    background-color: rgba(255, 255, 255, 0.85); /* Low opacity background */
-    backdrop-filter: blur(5px); /* Optional: A modern effect for glassiness */
-    border: 1px solid rgba(164, 198, 57, 0.5); /* Subtle willow border */
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(164, 198, 57, 0.5);
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 999; /* Below the button but above the notes */
-    transition: opacity 0.3s ease; /* Smooth fade effect */
+    z-index: 999;
+    transition: opacity 0.3s ease;
 }
 
-/* Make sure the text is readable on the semi-transparent background */
 #app-menu h3, #app-menu p, #app-menu label {
-    color: #4B5320; /* Ensure dark, readable text */
-}
-
-/* Base/Default Willow Theme (already somewhat implemented) */
-body {
-    background-color: #f0fff0; /* Light green/cream */
-    color: #4B5320; 
-    font-family: 'Libre Baskerville', serif; 
-}
-.replies {
-    border-left: 2px solid #A4C639; /* Standard Willow Green line */
-}
-
-/* EXAMPLE: Dark Mode Theme (If you want a contrast option) */
-.dark-theme {
-    background-color: #1e1e1e; /* Very dark gray */
-    color: #e0e0e0;
-}
-.dark-theme .note-content {
-    background-color: #333333;
-    color: #e0e0e0;
-}
-.dark-theme .replies {
-    border-left: 2px solid #777; /* Lighter line for contrast */
+    color: var(--main-text);
 }
