@@ -32,17 +32,18 @@ function loadThemeCustomizations() {
     applyTheme(CURRENT_THEME);
 }
 
+// 💡 FIX APPLIED HERE
 function applyTheme(themeName) {
+    const root = document.documentElement; 
+    
     document.body.className = themeName;
     
     if (themeName === 'custom-theme') {
-        const root = document.documentElement;
         for (const [key, value] of Object.entries(CUSTOM_THEME_VARS)) {
             root.style.setProperty(key, value);
         }
     } else {
-        // Clear custom properties if switching away from custom theme (ensures themes work correctly)
-        document.documentElement.style.cssText = ''; 
+        root.style.cssText = ''; 
     }
 }
 
@@ -57,7 +58,6 @@ function loadNotes() {
         notesData = []; 
     }
     
-    // Ensure a root note always exists
     if (notesData.length === 0) {
         notesData.push({
             id: generateId(),
@@ -70,9 +70,6 @@ function loadNotes() {
     renderAllNotes();
 }
 
-/**
- * Ensures each window has a unique ID in the URL for isolated localStorage.
- */
 function handleURLAndStorage() {
     const params = new URLSearchParams(window.location.search);
     let id = params.get('id');
@@ -92,7 +89,7 @@ function handleURLAndStorage() {
 }
 
 
-// --- Import/Export Logic ---
+// --- Import/Export Logic (Unchanged) ---
 
 function exportToTxt(notes) {
     let txtContent = '';
@@ -167,10 +164,6 @@ function handleImport(event) {
 
 // --- Data Manipulation Utilities (Keyboard Logic) ---
 
-/**
- * Saves the content of the currently focused note back to the notesData array.
- * This MUST be called before re-rendering the tree to prevent data loss.
- */
 function saveCurrentNote() {
     const activeEl = document.activeElement;
     if (activeEl && activeEl.classList.contains('note-content')) {
@@ -208,7 +201,7 @@ function updateNoteContent(id, content) {
 }
 
 function addNewSibling(noteId) {
-    saveCurrentNote(); // FIX: Save active content before structural change
+    saveCurrentNote(); 
     const result = findNoteAndParent(notesData, noteId);
     if (!result) return;
 
@@ -229,7 +222,7 @@ function addNewSibling(noteId) {
 }
 
 function increaseNoteDepth(noteId) {
-    saveCurrentNote(); // FIX: Save active content before structural change
+    saveCurrentNote(); 
     const result = findNoteAndParent(notesData, noteId);
     if (!result) return;
     
@@ -252,13 +245,13 @@ function increaseNoteDepth(noteId) {
 }
 
 function decreaseNoteDepth(noteId) {
-    saveCurrentNote(); // FIX: Save active content before structural change
+    saveCurrentNote(); 
     const noteResult = findNoteAndParent(notesData, noteId);
     if (!noteResult) return;
     
     const { note, parentArray } = noteResult;
     
-    // NEW DELETION LOGIC: If the note is at the root level (depth 0), delete it.
+    // Deletion Logic
     if (parentArray === notesData) {
         deleteNote(noteId); 
         return;
@@ -267,7 +260,6 @@ function decreaseNoteDepth(noteId) {
     let parentNoteId = null;
     let containerArray = notesData; 
     
-    // Find the note object that contains parentArray (this is the Parent Note object).
     const rootParent = notesData.find(rootNote => rootNote.children === parentArray);
 
     if (rootParent) {
@@ -398,7 +390,57 @@ function renderAllNotes() {
 
 // --- KEYBOARD INTERACTION HANDLER ---
 
+/**
+ * Handles Up/Down arrow key navigation between notes.
+ */
+function handleArrowNavigation(event, direction) {
+    // Save current note content before shifting focus
+    saveCurrentNote(); 
+    
+    let targetNoteEl;
+    const allNotes = Array.from(document.querySelectorAll('.note-content'));
+    const currentIndex = allNotes.findIndex(el => el === event.target);
+
+    if (currentIndex === -1) return;
+
+    if (direction === 'down') {
+        if (currentIndex < allNotes.length - 1) {
+            targetNoteEl = allNotes[currentIndex + 1];
+        }
+    } else if (direction === 'up') {
+        if (currentIndex > 0) {
+            targetNoteEl = allNotes[currentIndex - 1];
+        }
+    }
+
+    if (targetNoteEl) {
+        event.preventDefault();
+        targetNoteEl.focus();
+        
+        // Move cursor to the end of the line on focus
+        if (window.getSelection && document.createRange) {
+            const range = document.createRange();
+            range.selectNodeContents(targetNoteEl);
+            range.collapse(false); 
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    }
+}
+
+
 function handleKeydown(event) {
+    // Handle Ctrl + Arrow Key Traversal
+    if (event.key === 'ArrowUp' && (event.ctrlKey || event.metaKey)) {
+        handleArrowNavigation(event, 'up');
+        return;
+    }
+    if (event.key === 'ArrowDown' && (event.ctrlKey || event.metaKey)) {
+        handleArrowNavigation(event, 'down');
+        return;
+    }
+
     // Escape key closes menu
     if (event.key === 'Escape') {
         const appMenu = document.getElementById('app-menu');
@@ -422,7 +464,7 @@ function handleKeydown(event) {
     // 2. TAB KEY
     else if (event.key === 'Tab') {
         if (event.shiftKey) {
-            if (currentDepth >= 0) {
+            if (currentDepth >= 0) { 
                  decreaseNoteDepth(noteId);
             }
         } else {
@@ -444,7 +486,6 @@ function setupCustomThemeListeners() {
         '--main-bg': document.getElementById('color-bg'),
         '--main-text': document.getElementById('color-text'),
         '--branch-line': document.getElementById('color-line'),
-        // Add other inputs here if created
     };
 
     if (!themeSelector) return;
@@ -461,14 +502,12 @@ function setupCustomThemeListeners() {
         if (builder) builder.style.display = isCustom ? 'block' : 'none';
         
         if (isCustom) {
-            // Set color pickers to current custom values
             for (const [prop, input] of Object.entries(colorInputs)) {
                 if(input) input.value = CUSTOM_THEME_VARS[prop];
             }
         }
     });
     
-    // Initialize theme selector value
     themeSelector.value = CURRENT_THEME;
     if (builder) builder.style.display = (CURRENT_THEME === 'custom-theme') ? 'block' : 'none';
 
@@ -489,6 +528,7 @@ function setupCustomThemeListeners() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 💡 IMPORTANT: Load everything here
     loadNotes(); 
     
     // Menu Logic
