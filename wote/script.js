@@ -14,13 +14,17 @@ const CUSTOM_THEME_VARS = {
 };
 
 // --- Data & Persistence ---
-let notesData = [];
+let notesData = []; // This will hold the note array, including the notesData.metadata property
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
 
 function saveNotes() {
+    // Update the last_modified timestamp on every save operation
+    if (notesData.metadata) {
+        notesData.metadata.last_modified = new Date().toISOString();
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(notesData));
 }
 
@@ -32,7 +36,6 @@ function loadThemeCustomizations() {
     applyTheme(CURRENT_THEME);
 }
 
-// FIX: Corrected applyTheme function
 function applyTheme(themeName) {
     const root = document.documentElement; 
     
@@ -56,6 +59,16 @@ function loadNotes() {
         notesData = JSON.parse(data);
     } else {
         notesData = []; 
+    }
+    
+    // Ensure metadata and a root note always exist
+    if (!notesData.metadata) {
+        const now = new Date().toISOString();
+        notesData.metadata = {
+            file_id: UNIQUE_NOTE_ID,
+            created_at: now,
+            last_modified: now
+        };
     }
     
     if (notesData.length === 0) {
@@ -89,20 +102,37 @@ function handleURLAndStorage() {
 }
 
 
-// --- Import/Export Logic ---
+// --- Import/Export Logic (.WOTE JSON) ---
 
 function exportToTxt(notes) {
     let txtContent = '';
+
+    // 1. Print Metadata at the top
+    if (notes.metadata) {
+        const created = new Date(notes.metadata.created_at).toLocaleString();
+        const modified = new Date(notes.metadata.last_modified).toLocaleString();
+        
+        txtContent += `// METADATA: File ID: ${notes.metadata.file_id}\n`;
+        txtContent += `// TIMESTAMP: Created: ${created}, Last Modified: ${modified}\n\n`;
+    }
+
+    // 2. Traversal logic (only for the content array)
     function traverse(notesArray, depth) {
         const indent = '\t'.repeat(depth);
         notesArray.forEach(note => {
+            
+            // Do NOT print timestamps on every note anymore
+            
             txtContent += indent + note.content + '\n';
-            if (note.children.length > 0) {
+            
+            if (note.children && note.children.length > 0) {
                 traverse(note.children, depth + 1);
             }
         });
     }
-    traverse(notes, 0);
+
+    // Filter out the metadata property before traversing content
+    traverse(notes.filter(n => !n.metadata), 0); 
     return txtContent.trim();
 }
 
@@ -117,13 +147,14 @@ function handleExport() {
         safeFileName = 'willow-notes';
     }
 
-    const content = exportToTxt(notesData);
-    const blob = new Blob([content], { type: 'text/plain' });
+    // CRITICAL: Export the JSON structure directly
+    const content = JSON.stringify(notesData); 
+    const blob = new Blob([content], { type: 'application/json' }); 
     const url = URL.createObjectURL(blob);
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${safeFileName}.txt`; 
+    a.download = `${safeFileName}.wote`; // CRITICAL: Use .wote extension
     
     document.body.appendChild(a);
     a.click();
@@ -131,38 +162,35 @@ function handleExport() {
     URL.revokeObjectURL(url);
 }
 
-function importFromTxt(txt) {
-    const lines = txt.split('\n').filter(line => line.trim() !== '');
-    const newNotesData = [];
-    
-    const parentStack = [{ children: newNotesData, depth: -1 }]; 
-
-    lines.forEach(line => {
-        const depth = line.search(/[^\t]/);
-        const content = line.trim();
-
-        if (content === '') return;
-
-        const newNote = { id: generateId(), content: content, children: [] };
-
-        while (parentStack.length > 1 && parentStack[parentStack.length - 1].depth >= depth) {
-            parentStack.pop();
-        }
+// CRITICAL: Simple import function using JSON.parse
+function importFromTxt(jsonString) { 
+    try {
+        const importedData = JSON.parse(jsonString);
         
-        const parent = parentStack[parentStack.length - 1];
-        parent.children.push(newNote);
-
-        parentStack.push({ children: newNote.children, depth: depth });
-    });
-    
-    notesData = newNotesData;
-    saveNotes();
-    renderAllNotes();
+        // Ensure imported data is valid (an array with a metadata property)
+        if (Array.isArray(importedData) || importedData.metadata) {
+            // Overwrite current data and re-render
+            notesData = importedData;
+            saveNotes();
+            renderAllNotes();
+        } else {
+            alert("Error: Imported file does not contain a valid Willow Note structure.");
+        }
+    } catch (e) {
+        alert("Error: The file could not be read. It might be corrupted or not a valid .wote file.");
+    }
 }
 
 function handleImport(event) {
     const file = event.target.files[0];
     if (!file) return;
+
+    // CRITICAL: Check file extension
+    if (!file.name.endsWith('.wote') && !file.name.endsWith('.json')) {
+        alert("Please select a file with the .wote or .json extension.");
+        event.target.value = null; 
+        return;
+    }
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -207,7 +235,7 @@ function updateNoteContent(id, content) {
     const noteObj = findNoteById(notesData, id);
     if (noteObj) {
         noteObj.content = content.trim();
-        saveNotes();
+        saveNotes(); // Saves modification time
     }
 }
 
@@ -220,9 +248,13 @@ function addNewSibling(noteId) {
     const index = parentArray.findIndex(n => n.id === noteId);
 
     if (index !== -1) {
-        const newNote = { id: generateId(), content: '', children: [] };
+        const newNote = { 
+            id: generateId(), 
+            content: '', 
+            children: []
+        };
         parentArray.splice(index + 1, 0, newNote);
-        saveNotes();
+        saveNotes(); 
         renderAllNotes();
         
         setTimeout(() => {
@@ -348,13 +380,16 @@ function deleteNote(noteId) {
 }
 
 
-// --- RENDER FUNCTIONS (Unchanged) ---
+// --- RENDER FUNCTIONS ---
 function renderNoteTree(notes, parentEl, depth = 0) {
     if (!notes || notes.length === 0) return;
     const repliesContainer = document.createElement('div');
     repliesContainer.className = 'replies';
     parentEl.appendChild(repliesContainer);
     notes.forEach(note => {
+        // Skip rendering the metadata property
+        if (note === notesData.metadata) return; 
+
         const noteEl = document.createElement('div');
         noteEl.className = 'note';
         noteEl.dataset.id = note.id; 
@@ -377,6 +412,9 @@ function renderAllNotes() {
     const container = document.getElementById('note-container');
     container.innerHTML = ''; 
     notesData.forEach(rootNote => {
+        // Skip rendering the metadata property
+        if (rootNote === notesData.metadata) return; 
+
         const rootEl = document.createElement('div');
         rootEl.className = 'note root-note'; 
         rootEl.dataset.id = rootNote.id;
@@ -553,6 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Data Transfer Listeners
     if (exportBtn) exportBtn.addEventListener('click', handleExport);
+    // Note: The import button now accepts any file, but the handler checks for .wote
     if (importBtn && importFile) importBtn.addEventListener('click', () => importFile.click());
     if (importFile) importFile.addEventListener('change', handleImport);
 });
