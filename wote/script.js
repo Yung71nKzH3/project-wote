@@ -106,14 +106,34 @@ function exportToTxt(notes) {
     return txtContent.trim();
 }
 
+/**
+ * Downloads the notes as a TXT file, naming it after the content of the first root note.
+ */
 function handleExport() {
+    // 1. Get the content of the very first note
+    let fileNameContent = notesData[0] ? notesData[0].content : 'willow-notes';
+    
+    // 2. Clean the content for use as a filename:
+    //    - Replace illegal characters (like slashes, colons, etc.) with a hyphen.
+    //    - Trim whitespace.
+    //    - Fallback to 'willow-notes' if the content is empty.
+    let safeFileName = fileNameContent
+        .replace(/[\\/:*?"<>|]/g, '-') // Remove illegal file characters
+        .trim();
+        
+    if (!safeFileName) {
+        safeFileName = 'willow-notes';
+    }
+
     const content = exportToTxt(notesData);
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `willow-notes-${UNIQUE_NOTE_ID}.txt`;
+    // 3. Use the cleaned-up root content for the filename
+    a.download = `${safeFileName}.txt`; 
+    
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
