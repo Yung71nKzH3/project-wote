@@ -37,3 +37,68 @@
     margin-bottom: 10px;
     padding: 5px 0;
 }
+
+/* 1. Header and Button Positioning */
+#app-header {
+    position: fixed; /* Keep it in the same spot while scrolling */
+    top: 10px;
+    right: 10px;
+    z-index: 1000; /* Ensure it floats above everything else */
+}
+
+#menu-btn {
+    /* Style the button minimally, like a subtle circle */
+    background: #4B5320; /* Darker Willow Green */
+    color: white;
+    border: none;
+    border-radius: 50%; /* Make it circular */
+    width: 40px;
+    height: 40px;
+    font-size: 1.2em;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* 2. Menu Panel Styling (The "Pip" Window) */
+#app-menu {
+    position: fixed; /* Keep it anchored to the screen */
+    top: 50px; /* Position it below the button */
+    right: 10px;
+    width: 300px;
+    background-color: rgba(255, 255, 255, 0.85); /* Low opacity background */
+    backdrop-filter: blur(5px); /* Optional: A modern effect for glassiness */
+    border: 1px solid rgba(164, 198, 57, 0.5); /* Subtle willow border */
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 999; /* Below the button but above the notes */
+    transition: opacity 0.3s ease; /* Smooth fade effect */
+}
+
+/* Make sure the text is readable on the semi-transparent background */
+#app-menu h3, #app-menu p, #app-menu label {
+    color: #4B5320; /* Ensure dark, readable text */
+}
+
+/* Base/Default Willow Theme (already somewhat implemented) */
+body {
+    background-color: #f0fff0; /* Light green/cream */
+    color: #4B5320; 
+    font-family: 'Libre Baskerville', serif; 
+}
+.replies {
+    border-left: 2px solid #A4C639; /* Standard Willow Green line */
+}
+
+/* EXAMPLE: Dark Mode Theme (If you want a contrast option) */
+.dark-theme {
+    background-color: #1e1e1e; /* Very dark gray */
+    color: #e0e0e0;
+}
+.dark-theme .note-content {
+    background-color: #333333;
+    color: #e0e0e0;
+}
+.dark-theme .replies {
+    border-left: 2px solid #777; /* Lighter line for contrast */
+}

@@ -1,7 +1,17 @@
-// --- Configuration ---
+// --- Configuration & Globals ---
 let UNIQUE_NOTE_ID = 'default';
 let STORAGE_KEY = 'willowNotesData-default';
 const MAX_DEPTH = 5; 
+let CURRENT_THEME = localStorage.getItem('appTheme') || 'willow-theme';
+
+// The key CSS variables that can be customized
+const CUSTOM_THEME_VARS = {
+    '--main-bg': '#f0fff0',
+    '--main-text': '#4B5320',
+    '--branch-line': '#A4C639',
+    '--note-bg': '#fff',
+    '--input-focus': '#ddf'
+};
 
 // --- Data & Persistence ---
 let notesData = [];
@@ -11,14 +21,35 @@ function generateId() {
 }
 
 function saveNotes() {
-    // Saves data under the unique key
     localStorage.setItem(STORAGE_KEY, JSON.stringify(notesData));
 }
 
-function loadNotes() {
-    // 1. Check URL for unique ID and set storage key
-    handleURLAndStorage(); 
+function loadThemeCustomizations() {
+    const customVars = localStorage.getItem('customThemeVars');
+    if (customVars) {
+        Object.assign(CUSTOM_THEME_VARS, JSON.parse(customVars));
+    }
+    applyTheme(CURRENT_THEME);
+}
+
+function applyTheme(themeName) {
+    document.body.className = themeName;
     
+    if (themeName === 'custom-theme') {
+        const root = document.documentElement;
+        for (const [key, value] of Object.entries(CUSTOM_THEME_VARS)) {
+            root.style.setProperty(key, value);
+        }
+    } else {
+        // Clear custom properties if switching away from custom theme (ensures themes work correctly)
+        document.documentElement.style.cssText = ''; 
+    }
+}
+
+function loadNotes() {
+    handleURLAndStorage(); 
+    loadThemeCustomizations(); 
+
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
         notesData = JSON.parse(data);
@@ -30,7 +61,7 @@ function loadNotes() {
     if (notesData.length === 0) {
         notesData.push({
             id: generateId(),
-            content: 'Start your Willow Notes here...',
+            content: '', 
             children: []
         });
         saveNotes();
@@ -47,34 +78,24 @@ function handleURLAndStorage() {
     let id = params.get('id');
     
     if (!id) {
-        // No ID found, generate one and reload/redirect
         id = generateId();
         params.set('id', id);
-        // Use history.replaceState to change URL without a full page reload if supported, 
-        // but a full redirect is safer for this logic:
         window.location.search = params.toString(); 
         return; 
     }
     
     UNIQUE_NOTE_ID = id;
     STORAGE_KEY = 'willowNotesData-' + id;
-    document.getElementById('current-note-id').textContent = id;
     
-    // Theme settings are stored separately in cache (sessionStorage)
-    const theme = sessionStorage.getItem('theme') || 'willow';
-    // This is where you would apply your 'theme' CSS class to the body element
-    document.body.className = theme; 
+    const idEl = document.getElementById('current-note-id');
+    if (idEl) idEl.textContent = id;
 }
 
 
 // --- Import/Export Logic ---
 
-/**
- * Converts the notesData tree into the tab-indented TXT string.
- */
 function exportToTxt(notes) {
     let txtContent = '';
-
     function traverse(notesArray, depth) {
         const indent = '\t'.repeat(depth);
         notesArray.forEach(note => {
@@ -84,20 +105,15 @@ function exportToTxt(notes) {
             }
         });
     }
-
     traverse(notes, 0);
     return txtContent.trim();
 }
 
-/**
- * Downloads the notes as a TXT file.
- */
 function handleExport() {
     const content = exportToTxt(notesData);
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     
-    // Create a temporary link element for download
     const a = document.createElement('a');
     a.href = url;
     a.download = `willow-notes-${UNIQUE_NOTE_ID}.txt`;
@@ -107,40 +123,30 @@ function handleExport() {
     URL.revokeObjectURL(url);
 }
 
-/**
- * Converts the tab-indented TXT string back into the notesData tree.
- * Uses a parent stack to manage nesting based on indentation.
- */
 function importFromTxt(txt) {
     const lines = txt.split('\n').filter(line => line.trim() !== '');
     const newNotesData = [];
     
-    // Stack of parent objects. Index 0 holds the array for current depth 0.
     const parentStack = [{ children: newNotesData, depth: -1 }]; 
 
     lines.forEach(line => {
-        // Calculate depth based on tabs (\t)
         const depth = line.search(/[^\t]/);
         const content = line.trim();
 
-        if (content === '') return; // Skip empty lines after trim
+        if (content === '') return;
 
         const newNote = { id: generateId(), content: content, children: [] };
 
-        // 1. Move up the stack until we find the correct parent depth
         while (parentStack.length > 1 && parentStack[parentStack.length - 1].depth >= depth) {
             parentStack.pop();
         }
         
-        // 2. The new note's parent is the last element in the stack
         const parent = parentStack[parentStack.length - 1];
         parent.children.push(newNote);
 
-        // 3. Push the new note onto the stack to potentially become a parent itself
         parentStack.push({ children: newNote.children, depth: depth });
     });
     
-    // Overwrite current data and re-render
     notesData = newNotesData;
     saveNotes();
     renderAllNotes();
@@ -153,18 +159,27 @@ function handleImport(event) {
     const reader = new FileReader();
     reader.onload = (e) => {
         importFromTxt(e.target.result);
-        alert("Notes imported successfully! Current notes replaced.");
     };
     reader.readAsText(file);
-    // Clear the file input so the user can select the same file again if needed
     event.target.value = null; 
 }
 
 
-// --- Data Manipulation Utilities (Unchanged from previous successful version) ---
+// --- Data Manipulation Utilities (Keyboard Logic) ---
+
+/**
+ * Saves the content of the currently focused note back to the notesData array.
+ * This MUST be called before re-rendering the tree to prevent data loss.
+ */
+function saveCurrentNote() {
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.classList.contains('note-content')) {
+        const noteId = activeEl.closest('.note').dataset.id;
+        updateNoteContent(noteId, activeEl.textContent);
+    }
+}
 
 function findNoteAndParent(notesArray, id) {
-    // ... (keep previous function)
     for (const note of notesArray) {
         if (note.id === id) {
             return { note, parentArray: notesArray };
@@ -192,21 +207,11 @@ function updateNoteContent(id, content) {
     }
 }
 
-function addNewNote(parentId, content) {
-    const newNote = { id: generateId(), content: content.trim(), children: [] };
-    if (parentId === 'root') {
-        notesData.push(newNote);
-    } else {
-        const parentNote = findNoteById(notesData, parentId);
-        if (parentNote) parentNote.children.push(newNote);
-    }
-    saveNotes();
-    renderAllNotes();
-}
-
 function addNewSibling(noteId) {
+    saveCurrentNote(); // FIX: Save active content before structural change
     const result = findNoteAndParent(notesData, noteId);
     if (!result) return;
+
     const { note, parentArray } = result;
     const index = parentArray.findIndex(n => n.id === noteId);
 
@@ -215,6 +220,7 @@ function addNewSibling(noteId) {
         parentArray.splice(index + 1, 0, newNote);
         saveNotes();
         renderAllNotes();
+        
         setTimeout(() => {
             const newEl = document.querySelector(`[data-id="${newNote.id}"] .note-content`);
             if (newEl) newEl.focus();
@@ -223,16 +229,21 @@ function addNewSibling(noteId) {
 }
 
 function increaseNoteDepth(noteId) {
+    saveCurrentNote(); // FIX: Save active content before structural change
     const result = findNoteAndParent(notesData, noteId);
     if (!result) return;
+    
     const { note, parentArray } = result;
     const index = parentArray.findIndex(n => n.id === noteId);
+
     if (index > 0) {
         const previousSibling = parentArray[index - 1];
         parentArray.splice(index, 1);
         previousSibling.children.push(note);
+        
         saveNotes();
         renderAllNotes();
+        
         setTimeout(() => {
             const newEl = document.querySelector(`[data-id="${noteId}"] .note-content`);
             if (newEl) newEl.focus();
@@ -241,24 +252,45 @@ function increaseNoteDepth(noteId) {
 }
 
 function decreaseNoteDepth(noteId) {
+    saveCurrentNote(); // FIX: Save active content before structural change
     const noteResult = findNoteAndParent(notesData, noteId);
     if (!noteResult) return;
+    
     const { note, parentArray } = noteResult;
-    if (parentArray === notesData && notesData.findIndex(n => n.id === noteId) !== -1) return;
-
+    
+    // NEW DELETION LOGIC: If the note is at the root level (depth 0), delete it.
+    if (parentArray === notesData) {
+        deleteNote(noteId); 
+        return;
+    } 
+    
     let parentNoteId = null;
     let containerArray = notesData; 
     
-    const parentNoteInfo = findNoteAndParent(notesData, parentArray.find(n => n.id !== noteId).id); 
-    
-    if (parentNoteInfo) {
-        containerArray = parentNoteInfo.parentArray;
-        parentNoteId = parentNoteInfo.note.id;
-    } else {
-        const rootParent = notesData.find(n => n.children === parentArray);
-        if (!rootParent) return;
+    // Find the note object that contains parentArray (this is the Parent Note object).
+    const rootParent = notesData.find(rootNote => rootNote.children === parentArray);
+
+    if (rootParent) {
         parentNoteId = rootParent.id;
         containerArray = notesData;
+    } else {
+        let found = false;
+        function findGrandparent(arr) {
+            for (const n of arr) {
+                if (n.children === parentArray) {
+                    containerArray = arr; 
+                    parentNoteId = n.id;
+                    found = true;
+                    return;
+                }
+                if (n.children.length > 0) {
+                    findGrandparent(n.children);
+                }
+                if (found) return;
+            }
+        }
+        findGrandparent(notesData);
+        if (!found) return; 
     }
     
     const indexInParent = parentArray.findIndex(n => n.id === noteId);
@@ -276,9 +308,48 @@ function decreaseNoteDepth(noteId) {
     }, 0);
 }
 
-// --- RENDER FUNCTIONS (Unchanged) ---
-// ... (Keep renderNoteTree and renderAllNotes as they were) ...
 
+function deleteNote(noteId) {
+    const result = findNoteAndParent(notesData, noteId);
+    if (!result) return;
+    
+    const { note, parentArray } = result;
+    const index = parentArray.findIndex(n => n.id === noteId);
+
+    // 1. Check if the note is the very first root note
+    if (parentArray === notesData && index === 0) {
+        note.content = ''; 
+        saveNotes();
+        renderAllNotes();
+        return; 
+    } 
+    
+    // 2. Core Deletion and Re-parenting Logic
+    if (index !== -1) {
+        const children = note.children; 
+        parentArray.splice(index, 1);
+        
+        if (children && children.length > 0) {
+            parentArray.splice(index, 0, ...children);
+        }
+    }
+    
+    saveNotes();
+    renderAllNotes();
+
+    // After deletion, attempt to focus the previous or next note
+    setTimeout(() => {
+        const focusNote = parentArray[index] || parentArray[index - 1]; 
+        if (focusNote) {
+            document.querySelector(`[data-id="${focusNote.id}"] .note-content`).focus();
+        } else {
+             document.getElementById('note-container').focus();
+        }
+    }, 0);
+}
+
+
+// --- RENDER FUNCTIONS (Unchanged) ---
 function renderNoteTree(notes, parentEl, depth = 0) {
     if (!notes || notes.length === 0) return;
     const repliesContainer = document.createElement('div');
@@ -325,22 +396,33 @@ function renderAllNotes() {
     });
 }
 
-// --- KEYBOARD INTERACTION HANDLER (Unchanged) ---
-// ... (Keep handleKeydown as it was) ...
+// --- KEYBOARD INTERACTION HANDLER ---
 
 function handleKeydown(event) {
+    // Escape key closes menu
+    if (event.key === 'Escape') {
+        const appMenu = document.getElementById('app-menu');
+        if (appMenu) appMenu.style.display = 'none';
+        return;
+    }
+    
     if (event.key !== 'Enter' && event.key !== 'Tab') return;
+    
     event.preventDefault(); 
+    
     const currentNoteEl = event.target.closest('.note');
     const noteId = currentNoteEl.dataset.id;
     let currentDepth = parseInt(currentNoteEl.dataset.depth);
 
+    // 1. ENTER KEY
     if (event.key === 'Enter' && !event.shiftKey) {
         addNewSibling(noteId);
     } 
+    
+    // 2. TAB KEY
     else if (event.key === 'Tab') {
         if (event.shiftKey) {
-            if (currentDepth > 0) {
+            if (currentDepth >= 0) {
                  decreaseNoteDepth(noteId);
             }
         } else {
@@ -354,6 +436,58 @@ function handleKeydown(event) {
 
 // --- INITIALIZATION & Event Listeners ---
 
+function setupCustomThemeListeners() {
+    const themeSelector = document.getElementById('theme-selector');
+    const builder = document.getElementById('custom-theme-builder');
+    const saveBtn = document.getElementById('save-custom-theme-btn');
+    const colorInputs = {
+        '--main-bg': document.getElementById('color-bg'),
+        '--main-text': document.getElementById('color-text'),
+        '--branch-line': document.getElementById('color-line'),
+        // Add other inputs here if created
+    };
+
+    if (!themeSelector) return;
+    
+    // Show/Hide Customizer on selection change
+    themeSelector.addEventListener('change', (e) => {
+        const newTheme = e.target.value;
+        const isCustom = newTheme === 'custom-theme';
+        
+        localStorage.setItem('appTheme', newTheme); 
+        CURRENT_THEME = newTheme;
+        applyTheme(newTheme);
+        
+        if (builder) builder.style.display = isCustom ? 'block' : 'none';
+        
+        if (isCustom) {
+            // Set color pickers to current custom values
+            for (const [prop, input] of Object.entries(colorInputs)) {
+                if(input) input.value = CUSTOM_THEME_VARS[prop];
+            }
+        }
+    });
+    
+    // Initialize theme selector value
+    themeSelector.value = CURRENT_THEME;
+    if (builder) builder.style.display = (CURRENT_THEME === 'custom-theme') ? 'block' : 'none';
+
+    // Live color application during customization
+    for (const [prop, input] of Object.entries(colorInputs)) {
+        if(input) input.addEventListener('input', (e) => {
+            document.documentElement.style.setProperty(prop, e.target.value);
+            CUSTOM_THEME_VARS[prop] = e.target.value;
+        });
+    }
+
+    // Save button logic
+    if (saveBtn) saveBtn.addEventListener('click', () => {
+        localStorage.setItem('customThemeVars', JSON.stringify(CUSTOM_THEME_VARS));
+        alert("Custom theme saved! It will persist across sessions.");
+    });
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     loadNotes(); 
     
@@ -364,24 +498,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importFile = document.getElementById('import-file');
-    // const themeSelector = document.getElementById('theme-selector'); // For future theme updates
+    
+    setupCustomThemeListeners(); 
 
-    menuBtn.addEventListener('click', () => {
-        appMenu.style.display = 'block';
-    });
-    closeMenuBtn.addEventListener('click', () => {
-        appMenu.style.display = 'none';
-    });
+    if (menuBtn && appMenu && closeMenuBtn) {
+        menuBtn.addEventListener('click', () => {
+            appMenu.style.display = 'block';
+        });
+        closeMenuBtn.addEventListener('click', () => {
+            appMenu.style.display = 'none';
+        });
+    }
 
     // Data Transfer Listeners
-    exportBtn.addEventListener('click', handleExport);
-    importBtn.addEventListener('click', () => importFile.click());
-    importFile.addEventListener('change', handleImport);
-    
-    // // Theme Listener (Future implementation)
-    // themeSelector.addEventListener('change', (e) => {
-    //     const theme = e.target.value;
-    //     sessionStorage.setItem('theme', theme);
-    //     document.body.className = theme;
-    // });
+    if (exportBtn) exportBtn.addEventListener('click', handleExport);
+    if (importBtn && importFile) importBtn.addEventListener('click', () => importFile.click());
+    if (importFile) importFile.addEventListener('change', handleImport);
 });
