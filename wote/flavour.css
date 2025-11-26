@@ -17,7 +17,6 @@
 
 .note-area {
     padding: 20px;
-    /* Ensure right side has space */
     padding-right: 40px; 
 }
 
@@ -33,18 +32,27 @@ body {
     color: var(--main-text); 
 }
 
-/* NEW: Flex container for the note row */
+/* Flex container for the note row */
 .note-row {
     display: flex;
     align-items: flex-start;
     gap: 10px;
 }
 
-/* Wrapper holds the actual content */
+/* Wrapper: ALIGNS CHECKBOX AND CONTENT SIDE-BY-SIDE */
 .note-content-wrapper {
-    flex-grow: 1; /* Takes up all available space */
+    flex-grow: 1; 
     display: flex;
-    flex-direction: column; /* Stacks image preview below text */
+    flex-direction: row; /* Fixed: Row ensures checkbox is left of text */
+    align-items: flex-start;
+}
+
+/* New: Column for Text + Image + URL Input */
+.note-main-column {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    width: 100%;
 }
 
 .note-content {
@@ -55,7 +63,7 @@ body {
     outline: none;
     min-height: 1.2em;
     word-wrap: break-word;
-    width: 100%; /* Ensure it fills wrapper */
+    width: 100%;
     box-sizing: border-box;
 }
 
@@ -81,8 +89,8 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-top: 8px; /* Align with text */
-    min-width: 60px; /* Prevent squishing */
+    padding-top: 8px; 
+    min-width: 60px; 
     justify-content: flex-end;
     opacity: 0.5;
     transition: opacity 0.2s;
@@ -92,7 +100,6 @@ body {
     opacity: 1;
 }
 
-/* Type Badge (TXT, MD, IMG, etc) */
 .type-badge {
     font-size: 0.7em;
     font-weight: bold;
@@ -104,7 +111,6 @@ body {
     user-select: none;
 }
 
-/* Toggle Button (Collapse) */
 .toggle-btn {
     background: none;
     border: none;
@@ -123,11 +129,13 @@ body {
 
 /* --- NODE SPECIFIC STYLES --- */
 
+/* Fixed Checkbox Alignment */
 .note-checkbox {
-    margin: 10px 0 5px 0; 
+    margin-top: 12px; /* Visual alignment with first line of text */
+    margin-right: 12px;
     transform: scale(1.3);
     cursor: pointer;
-    align-self: flex-start;
+    flex-shrink: 0; /* Prevents squishing */
 }
 
 .note-done .note-content {
@@ -135,9 +143,24 @@ body {
     opacity: 0.6;
 }
 
+/* Image Updates */
+.url-input {
+    margin-top: 5px;
+    background: rgba(0,0,0,0.1);
+    border: none;
+    border-bottom: 1px solid var(--branch-line);
+    color: var(--main-text);
+    padding: 4px;
+    font-size: 0.8em;
+    width: 100%;
+    font-family: monospace;
+}
+
 .note-image-preview {
     display: block;
     max-width: 100%;
+    max-height: 400px; /* Limit height for large images */
+    object-fit: contain; /* Ensure aspect ratio is kept */
     margin-top: 10px;
     border-radius: 4px;
     border: 1px solid var(--branch-line);

@@ -12,15 +12,13 @@ const CUSTOM_THEME_VARS = {
     '--input-focus': '#ddf'
 };
 
-// --- DEFAULT HELP DATA ---
 const HELP_DATA = [
     {
         id: 'h1', type: 'markdown', content: '# Welcome to Wote!', children: [
-            { id: 'h2', type: 'text', content: 'See that [MD] badge on the right? That means this is Markdown.', children: [] },
-            { id: 'h3', type: 'image', content: 'https://via.placeholder.com/300x100?text=Wote+Image+Node', children: [] },
-            { id: 'h4', type: 'text', content: 'The controls are now on the right side ->', children: [
-                 { id: 'h7', type: 'text', content: 'Collapsed child node', children: [] }
-            ], collapsed: true }
+            { id: 'h2', type: 'text', content: 'Checkboxes are now aligned correctly!', children: [] },
+            { id: 'h3', type: 'todo', checked: false, content: 'Like this one right here.', children: [] },
+            { id: 'h4', type: 'image', content: 'This is the Title of the image', imageUrl: 'https://via.placeholder.com/600x400', children: [], collapsed: false },
+            { id: 'h5', type: 'image', content: 'Collapsed Image (Click arrow to expand)', imageUrl: 'https://via.placeholder.com/150', children: [], collapsed: true }
         ]
     }
 ];
@@ -202,6 +200,7 @@ function addNewSibling(noteId) {
             children: [],
             collapsed: false
         };
+        // Reset image type to text for new lines to avoid confusion
         if (newNote.type === 'image') newNote.type = 'text';
 
         parentArray.splice(index + 1, 0, newNote);
@@ -315,14 +314,19 @@ function getTypeBadge(type) {
         case 'markdown': return 'MD';
         case 'todo': return '✓';
         case 'image': return 'IMG';
-        default: return ''; // No badge for text
+        default: return ''; 
     }
+}
+
+// Helper to validate URL roughly
+function isUrl(string) {
+    try { return Boolean(new URL(string)); } catch(e){ return false; }
 }
 
 function renderNoteContent(note, wrapper) {
     wrapper.innerHTML = '';
     
-    // Checkbox
+    // 1. Checkbox (Left side of Flex)
     if (note.type === 'todo') {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
@@ -337,11 +341,16 @@ function renderNoteContent(note, wrapper) {
         if (note.checked) wrapper.classList.add('note-done');
     }
 
-    // Editable Content Box
+    // 2. Main Column (Text + Image + URL Input)
+    const mainCol = document.createElement('div');
+    mainCol.className = 'note-main-column';
+    
+    // CONTENT BOX (Editable Title/Text)
     const contentBox = document.createElement('div');
     contentBox.className = 'note-content';
     contentBox.setAttribute('contenteditable', 'true'); 
     
+    // MARKDOWN LOGIC
     if (note.type === 'markdown') {
         if (note.isEditing) {
             contentBox.textContent = note.content;
@@ -357,21 +366,52 @@ function renderNoteContent(note, wrapper) {
                 setTimeout(() => focusNote(note.id), 0);
             });
         }
+        mainCol.appendChild(contentBox);
     } 
+    // IMAGE LOGIC
     else if (note.type === 'image') {
-        contentBox.textContent = note.content || 'Paste Image URL here...';
-        if (note.content) {
-            const img = document.createElement('img');
-            img.src = note.content;
-            img.className = 'note-image-preview';
-            img.onerror = () => { img.style.display = 'none'; };
-            wrapper.appendChild(img);
+        // Data Migration: If content is a URL and imageUrl is empty, move it
+        if (!note.imageUrl && isUrl(note.content)) {
+            note.imageUrl = note.content;
+            note.content = 'Image';
+            saveNotes(); // Persist migration
+        }
+
+        // Render Title (Content)
+        contentBox.textContent = note.content; 
+        mainCol.appendChild(contentBox);
+
+        // Only show Image/Input if not collapsed (Image-specific collapse)
+        if (!note.collapsed) {
+            // URL Input
+            const urlInput = document.createElement('input');
+            urlInput.type = 'text';
+            urlInput.className = 'url-input';
+            urlInput.placeholder = 'Paste Image URL here...';
+            urlInput.value = note.imageUrl || '';
+            urlInput.addEventListener('change', (e) => {
+                updateNoteData(note.id, { imageUrl: e.target.value });
+                renderAllNotes(); // Re-render to show image
+            });
+            mainCol.appendChild(urlInput);
+
+            // Image Preview
+            if (note.imageUrl) {
+                const img = document.createElement('img');
+                img.src = note.imageUrl;
+                img.className = 'note-image-preview';
+                img.onerror = () => { img.style.display = 'none'; };
+                mainCol.appendChild(img);
+            }
         }
     } 
+    // TEXT/TODO LOGIC
     else {
         contentBox.textContent = note.content;
+        mainCol.appendChild(contentBox);
     }
 
+    // Event Listeners for Typing (Title/Content)
     if (contentBox.getAttribute('contenteditable') === 'true') {
         contentBox.addEventListener('keydown', handleKeydown);
         contentBox.addEventListener('input', (e) => {
@@ -385,7 +425,7 @@ function renderNoteContent(note, wrapper) {
         }
     }
 
-    wrapper.appendChild(contentBox);
+    wrapper.appendChild(mainCol);
 }
 
 function renderNoteTree(notes, parentEl, depth = 0) {
@@ -402,7 +442,7 @@ function renderNoteTree(notes, parentEl, depth = 0) {
         noteEl.dataset.id = note.id;
         noteEl.dataset.depth = depth;
 
-        // NEW: Flex Row
+        // Row Container
         const noteRow = document.createElement('div');
         noteRow.className = 'note-row';
 
@@ -419,11 +459,11 @@ function renderNoteTree(notes, parentEl, depth = 0) {
         renderNoteContent(note, wrapper);
         noteRow.appendChild(wrapper);
 
-        // NEW: Right-Side Controls Container
+        // Right-Side Controls
         const controls = document.createElement('div');
         controls.className = 'node-controls';
 
-        // 1. Badge
+        // Badge
         const badgeTxt = getTypeBadge(note.type);
         if (badgeTxt) {
             const badge = document.createElement('span');
@@ -433,11 +473,11 @@ function renderNoteTree(notes, parentEl, depth = 0) {
             controls.appendChild(badge);
         }
 
-        // 2. Toggle (Collapse)
-        if (note.children && note.children.length > 0) {
+        // Toggle (Collapse) - SHOW FOR CHILDREN OR IMAGES
+        if ((note.children && note.children.length > 0) || note.type === 'image') {
             const toggle = document.createElement('button');
             toggle.className = 'toggle-btn';
-            toggle.innerHTML = note.collapsed ? '&#9664;' : '&#9660;'; // Left-pointing or Down-pointing
+            toggle.innerHTML = note.collapsed ? '&#9664;' : '&#9660;'; 
             toggle.title = note.collapsed ? "Expand" : "Collapse";
             toggle.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -451,7 +491,7 @@ function renderNoteTree(notes, parentEl, depth = 0) {
         noteEl.appendChild(noteRow);
         repliesContainer.appendChild(noteEl);
 
-        // Render Children
+        // Render Children (Hidden if collapsed)
         if (note.children && note.children.length > 0 && !note.collapsed) {
             renderNoteTree(note.children, noteEl, depth + 1);
         }
@@ -497,7 +537,7 @@ function renderAllNotes() {
             controls.appendChild(badge);
         }
 
-        if (rootNote.children && rootNote.children.length > 0) {
+        if ((rootNote.children && rootNote.children.length > 0) || rootNote.type === 'image') {
             const toggle = document.createElement('button');
             toggle.className = 'toggle-btn';
             toggle.innerHTML = rootNote.collapsed ? '&#9664;' : '&#9660;';
