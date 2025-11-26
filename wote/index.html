@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <meta name="author" content="Leonardo Paolo Valenti">
-  <meta name="generator" content="Visual Studio Code">
   <meta name="description" content="project-wote a note taking app in my personal favourite interactive format">
-  <meta name="revised" content="2025-10-13">
-  <meta name="robots" content="index, follow">
-
+  
   <link rel="stylesheet" href="flavour.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap">
   
   <!-- Markdown Support -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <!-- DOMPurify for security (Sanitizes Markdown HTML) -->
+  <!-- DOMPurify -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+  <!-- NEW: Highlight.js for Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
   <script src="script.js" defer></script>
   <title>Wote</title>
@@ -34,13 +34,12 @@
             <h3>App Settings & Data</h3>
             <p>Current Note ID: <span id="current-note-id"></span></p>
 
-            <!-- Help Button -->
             <button id="help-btn" onclick="window.location.href='?id=help'">Open Help Manual</button>
             <br><br>
 
             <button id="export-btn">Export to .wote</button><br>
             <input type="file" id="import-file" accept=".wote, application/json" style="display:none;">
-            <button id="import-btn">Import from .wote (Clear Current)</button>
+            <button id="import-btn">Import from .wote</button>
             
             <hr>
             <label>Theme: 
@@ -58,7 +57,6 @@
                 <label>Background: <input type="color" id="color-bg"></label><br>
                 <label>Text: <input type="color" id="color-text"></label><br>
                 <label>Branch Line: <input type="color" id="color-line"></label><br>
-                <!-- New Note Background Picker -->
                 <label>Note BG: <input type="color" id="color-note-bg"></label><br>
                 <button id="save-custom-theme-btn">Save As Custom</button>
             </div>
