@@ -14,7 +14,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap">
-  <link rel="canonical" href="https://zedf.co.uk/wote">
+  
+  <!-- Markdown Support -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- DOMPurify for security (Sanitizes Markdown HTML) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
   <script src="script.js" defer></script>
   <title>Wote</title>
 </head>
@@ -29,9 +34,13 @@
             <h3>App Settings & Data</h3>
             <p>Current Note ID: <span id="current-note-id"></span></p>
 
-            <button id="export-btn">Export to .txt</button><br>
+            <!-- Help Button -->
+            <button id="help-btn" onclick="window.location.href='?id=help'">Open Help Manual</button>
+            <br><br>
+
+            <button id="export-btn">Export to .wote</button><br>
             <input type="file" id="import-file" accept=".wote, application/json" style="display:none;">
-            <button id="import-btn">Import from .txt (Clear Current)</button>
+            <button id="import-btn">Import from .wote (Clear Current)</button>
             
             <hr>
             <label>Theme: 
@@ -49,6 +58,8 @@
                 <label>Background: <input type="color" id="color-bg"></label><br>
                 <label>Text: <input type="color" id="color-text"></label><br>
                 <label>Branch Line: <input type="color" id="color-line"></label><br>
+                <!-- New Note Background Picker -->
+                <label>Note BG: <input type="color" id="color-note-bg"></label><br>
                 <button id="save-custom-theme-btn">Save As Custom</button>
             </div>
             <p><button id="close-menu-btn">Close</button></p>

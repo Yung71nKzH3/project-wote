@@ -1,27 +1,38 @@
 // --- Configuration & Globals ---
 let UNIQUE_NOTE_ID = 'default';
 let STORAGE_KEY = 'willowNotesData-default';
-const MAX_DEPTH = 5; 
+const MAX_DEPTH = 15; 
 let CURRENT_THEME = localStorage.getItem('appTheme') || 'willow-theme';
 
-// The key CSS variables that can be customized
 const CUSTOM_THEME_VARS = {
     '--main-bg': '#f0fff0',
     '--main-text': '#4B5320',
     '--branch-line': '#A4C639',
-    '--note-bg': '#fff',
+    '--note-bg': '#ffffff', 
     '--input-focus': '#ddf'
 };
 
+// --- DEFAULT HELP DATA ---
+const HELP_DATA = [
+    {
+        id: 'h1', type: 'markdown', content: '# Welcome to Wote!', children: [
+            { id: 'h2', type: 'text', content: 'See that [MD] badge on the right? That means this is Markdown.', children: [] },
+            { id: 'h3', type: 'image', content: 'https://via.placeholder.com/300x100?text=Wote+Image+Node', children: [] },
+            { id: 'h4', type: 'text', content: 'The controls are now on the right side ->', children: [
+                 { id: 'h7', type: 'text', content: 'Collapsed child node', children: [] }
+            ], collapsed: true }
+        ]
+    }
+];
+
 // --- Data & Persistence ---
-let notesData = []; // This will hold the note array, including the notesData.metadata property
+let notesData = []; 
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 }
 
 function saveNotes() {
-    // Update the last_modified timestamp on every save operation
     if (notesData.metadata) {
         notesData.metadata.last_modified = new Date().toISOString();
     }
@@ -38,9 +49,7 @@ function loadThemeCustomizations() {
 
 function applyTheme(themeName) {
     const root = document.documentElement; 
-    
     document.body.className = themeName;
-    
     if (themeName === 'custom-theme') {
         for (const [key, value] of Object.entries(CUSTOM_THEME_VARS)) {
             root.style.setProperty(key, value);
@@ -54,6 +63,19 @@ function loadNotes() {
     handleURLAndStorage(); 
     loadThemeCustomizations(); 
 
+    if (UNIQUE_NOTE_ID === 'help') {
+        const savedHelp = localStorage.getItem(STORAGE_KEY);
+        if (savedHelp) {
+            notesData = JSON.parse(savedHelp);
+        } else {
+            notesData = JSON.parse(JSON.stringify(HELP_DATA)); 
+            notesData.metadata = { file_id: 'help', created_at: new Date().toISOString() };
+            saveNotes(); 
+        }
+        renderAllNotes();
+        return;
+    }
+
     const data = localStorage.getItem(STORAGE_KEY);
     if (data) {
         notesData = JSON.parse(data);
@@ -61,21 +83,21 @@ function loadNotes() {
         notesData = []; 
     }
     
-    // Ensure metadata and a root note always exist
     if (!notesData.metadata) {
-        const now = new Date().toISOString();
         notesData.metadata = {
             file_id: UNIQUE_NOTE_ID,
-            created_at: now,
-            last_modified: now
+            created_at: new Date().toISOString(),
+            last_modified: new Date().toISOString()
         };
     }
     
     if (notesData.length === 0) {
         notesData.push({
             id: generateId(),
+            type: 'text',
             content: '', 
-            children: []
+            children: [],
+            collapsed: false
         });
         saveNotes();
     }
@@ -86,141 +108,67 @@ function loadNotes() {
 function handleURLAndStorage() {
     const params = new URLSearchParams(window.location.search);
     let id = params.get('id');
-    
     if (!id) {
         id = generateId();
         params.set('id', id);
         window.location.search = params.toString(); 
         return; 
     }
-    
     UNIQUE_NOTE_ID = id;
     STORAGE_KEY = 'willowNotesData-' + id;
-    
     const idEl = document.getElementById('current-note-id');
-    if (idEl) idEl.textContent = id;
+    if (idEl) idEl.textContent = (id === 'help') ? 'Help Manual' : id;
 }
 
-
-// --- Import/Export Logic (.WOTE JSON) ---
-
-function exportToTxt(notes) {
-    let txtContent = '';
-
-    // 1. Print Metadata at the top
-    if (notes.metadata) {
-        const created = new Date(notes.metadata.created_at).toLocaleString();
-        const modified = new Date(notes.metadata.last_modified).toLocaleString();
-        
-        txtContent += `// METADATA: File ID: ${notes.metadata.file_id}\n`;
-        txtContent += `// TIMESTAMP: Created: ${created}, Last Modified: ${modified}\n\n`;
-    }
-
-    // 2. Traversal logic (only for the content array)
-    function traverse(notesArray, depth) {
-        const indent = '\t'.repeat(depth);
-        notesArray.forEach(note => {
-            
-            // Do NOT print timestamps on every note anymore
-            
-            txtContent += indent + note.content + '\n';
-            
-            if (note.children && note.children.length > 0) {
-                traverse(note.children, depth + 1);
-            }
-        });
-    }
-
-    // Filter out the metadata property before traversing content
-    traverse(notes.filter(n => !n.metadata), 0); 
-    return txtContent.trim();
-}
-
+// --- Export/Import ---
 function handleExport() {
-    // Filename logic
     let fileNameContent = notesData[0] ? notesData[0].content : 'willow-notes';
-    let safeFileName = fileNameContent
-        .replace(/[\\/:*?"<>|]/g, '-') 
-        .trim();
-        
-    if (!safeFileName) {
-        safeFileName = 'willow-notes';
-    }
-
-    // CRITICAL: Export the JSON structure directly
+    let safeFileName = fileNameContent.replace(/[\\/:*?"<>|]/g, '-').trim() || 'willow-notes';
     const content = JSON.stringify(notesData); 
     const blob = new Blob([content], { type: 'application/json' }); 
     const url = URL.createObjectURL(blob);
-    
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${safeFileName}.wote`; // CRITICAL: Use .wote extension
-    
+    a.download = `${safeFileName}.wote`; 
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
 
-// CRITICAL: Simple import function using JSON.parse
-function importFromTxt(jsonString) { 
-    try {
-        const importedData = JSON.parse(jsonString);
-        
-        // Ensure imported data is valid (an array with a metadata property)
-        if (Array.isArray(importedData) || importedData.metadata) {
-            // Overwrite current data and re-render
-            notesData = importedData;
-            saveNotes();
-            renderAllNotes();
-        } else {
-            alert("Error: Imported file does not contain a valid Willow Note structure.");
-        }
-    } catch (e) {
-        alert("Error: The file could not be read. It might be corrupted or not a valid .wote file.");
-    }
-}
-
 function handleImport(event) {
     const file = event.target.files[0];
     if (!file) return;
-
-    // CRITICAL: Check file extension
     if (!file.name.endsWith('.wote') && !file.name.endsWith('.json')) {
         alert("Please select a file with the .wote or .json extension.");
-        event.target.value = null; 
         return;
     }
-
     const reader = new FileReader();
     reader.onload = (e) => {
-        importFromTxt(e.target.result);
+        try {
+            const importedData = JSON.parse(e.target.result);
+            if (Array.isArray(importedData) || importedData.metadata) {
+                notesData = importedData;
+                saveNotes();
+                renderAllNotes();
+            } else {
+                alert("Invalid Wote file.");
+            }
+        } catch (err) {
+            alert("Corrupted file.");
+        }
     };
     reader.readAsText(file);
     event.target.value = null; 
 }
 
-
-// --- Data Manipulation Utilities (Keyboard Logic) ---
-
-function saveCurrentNote() {
-    const activeEl = document.activeElement;
-    if (activeEl && activeEl.classList.contains('note-content')) {
-        const noteId = activeEl.closest('.note').dataset.id;
-        updateNoteContent(noteId, activeEl.textContent);
-    }
-}
-
+// --- Data Utilities ---
 function findNoteAndParent(notesArray, id) {
     for (const note of notesArray) {
-        if (note.id === id) {
-            return { note, parentArray: notesArray };
-        }
+        if (note.id === id) return { note, parentArray: notesArray };
         if (note.children && note.children.length > 0) {
             const result = findNoteAndParent(note.children, id);
-            if (result) {
-                return result;
-            }
+            if (result) return result;
         }
     }
     return null;
@@ -231,68 +179,59 @@ function findNoteById(notesArray, id) {
     return result ? result.note : null;
 }
 
-function updateNoteContent(id, content) {
+function updateNoteData(id, updates) {
     const noteObj = findNoteById(notesData, id);
     if (noteObj) {
-        noteObj.content = content.trim();
-        saveNotes(); // Saves modification time
+        Object.assign(noteObj, updates);
+        saveNotes();
     }
 }
 
+// --- Navigation & Structure Logic ---
 function addNewSibling(noteId) {
-    saveCurrentNote(); 
     const result = findNoteAndParent(notesData, noteId);
     if (!result) return;
-
     const { note, parentArray } = result;
     const index = parentArray.findIndex(n => n.id === noteId);
 
     if (index !== -1) {
         const newNote = { 
             id: generateId(), 
+            type: note.type || 'text', 
             content: '', 
-            children: []
+            children: [],
+            collapsed: false
         };
+        if (newNote.type === 'image') newNote.type = 'text';
+
         parentArray.splice(index + 1, 0, newNote);
         saveNotes(); 
         renderAllNotes();
-        
-        setTimeout(() => {
-            const newEl = document.querySelector(`[data-id="${newNote.id}"] .note-content`);
-            if (newEl) newEl.focus();
-        }, 0);
+        setTimeout(() => focusNote(newNote.id), 0);
     }
 }
 
 function increaseNoteDepth(noteId) {
-    saveCurrentNote(); 
     const result = findNoteAndParent(notesData, noteId);
     if (!result) return;
-    
     const { note, parentArray } = result;
     const index = parentArray.findIndex(n => n.id === noteId);
 
     if (index > 0) {
         const previousSibling = parentArray[index - 1];
+        previousSibling.collapsed = false; 
         parentArray.splice(index, 1);
         previousSibling.children.push(note);
-        
         saveNotes();
         renderAllNotes();
-        
-        setTimeout(() => {
-            const newEl = document.querySelector(`[data-id="${noteId}"] .note-content`);
-            if (newEl) newEl.focus();
-        }, 0);
+        setTimeout(() => focusNote(noteId), 0);
     }
 }
 
 function decreaseNoteDepth(noteId) {
-    saveCurrentNote(); 
-    const noteResult = findNoteAndParent(notesData, noteId);
-    if (!noteResult) return;
-    
-    const { note, parentArray } = noteResult;
+    const result = findNoteAndParent(notesData, noteId);
+    if (!result) return;
+    const { note, parentArray } = result;
     
     if (parentArray === notesData) {
         deleteNote(noteId); 
@@ -300,109 +239,220 @@ function decreaseNoteDepth(noteId) {
     } 
     
     let parentNoteId = null;
-    let containerArray = notesData; 
+    let grandParentArray = notesData;
+    const parentNote = findParentNoteOfArray(notesData, parentArray);
     
-    const rootParent = notesData.find(rootNote => rootNote.children === parentArray);
-
-    if (rootParent) {
-        parentNoteId = rootParent.id;
-        containerArray = notesData;
-    } else {
-        let found = false;
-        function findGrandparent(arr) {
-            for (const n of arr) {
-                if (n.children === parentArray) {
-                    containerArray = arr; 
-                    parentNoteId = n.id;
-                    found = true;
-                    return;
-                }
-                if (n.children.length > 0) {
-                    findGrandparent(n.children);
-                }
-                if (found) return;
-            }
-        }
-        findGrandparent(notesData);
-        if (!found) return; 
+    if (parentNote) {
+        const grandParentResult = findNoteAndParent(notesData, parentNote.id);
+        if(grandParentResult) grandParentArray = grandParentResult.parentArray;
+        
+        const indexInParent = parentArray.findIndex(n => n.id === noteId);
+        parentArray.splice(indexInParent, 1);
+        const parentIndex = grandParentArray.findIndex(n => n.id === parentNote.id);
+        grandParentArray.splice(parentIndex + 1, 0, note);
+        saveNotes();
+        renderAllNotes();
+        setTimeout(() => focusNote(noteId), 0);
     }
-    
-    const indexInParent = parentArray.findIndex(n => n.id === noteId);
-    parentArray.splice(indexInParent, 1);
-    
-    const parentIndexInGrandparent = containerArray.findIndex(n => n.id === parentNoteId);
-    containerArray.splice(parentIndexInGrandparent + 1, 0, note);
-
-    saveNotes();
-    renderAllNotes();
-    
-    setTimeout(() => {
-        const newEl = document.querySelector(`[data-id="${noteId}"] .note-content`);
-        if (newEl) newEl.focus();
-    }, 0);
 }
 
+function findParentNoteOfArray(currentArray, targetChildArray) {
+    for (const note of currentArray) {
+        if (note.children === targetChildArray) return note;
+        if (note.children.length > 0) {
+            const found = findParentNoteOfArray(note.children, targetChildArray);
+            if (found) return found;
+        }
+    }
+    return null;
+}
 
 function deleteNote(noteId) {
     const result = findNoteAndParent(notesData, noteId);
     if (!result) return;
-    
     const { note, parentArray } = result;
     const index = parentArray.findIndex(n => n.id === noteId);
 
-    if (parentArray === notesData && index === 0) {
+    if (parentArray === notesData && index === 0 && parentArray.length === 1) {
         note.content = ''; 
         saveNotes();
         renderAllNotes();
         return; 
     } 
-    
     if (index !== -1) {
         const children = note.children; 
         parentArray.splice(index, 1);
-        
         if (children && children.length > 0) {
             parentArray.splice(index, 0, ...children);
         }
     }
-    
     saveNotes();
     renderAllNotes();
-
     setTimeout(() => {
-        const focusNote = parentArray[index] || parentArray[index - 1]; 
-        if (focusNote) {
-            document.querySelector(`[data-id="${focusNote.id}"] .note-content`).focus();
-        } else {
-             document.getElementById('note-container').focus();
-        }
+        const prev = parentArray[index-1] || parentArray[index];
+        if (prev) focusNote(prev.id);
+        else document.getElementById('note-container').focus();
     }, 0);
 }
 
+// --- RENDER LOGIC ---
 
-// --- RENDER FUNCTIONS ---
+function focusNote(id) {
+    const el = document.querySelector(`[data-id="${id}"] .note-content`);
+    if (el) {
+        el.focus();
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+}
+
+function getTypeBadge(type) {
+    switch (type) {
+        case 'markdown': return 'MD';
+        case 'todo': return '✓';
+        case 'image': return 'IMG';
+        default: return ''; // No badge for text
+    }
+}
+
+function renderNoteContent(note, wrapper) {
+    wrapper.innerHTML = '';
+    
+    // Checkbox
+    if (note.type === 'todo') {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'note-checkbox';
+        checkbox.checked = note.checked || false;
+        checkbox.addEventListener('change', (e) => {
+            updateNoteData(note.id, { checked: e.target.checked });
+            if (e.target.checked) wrapper.classList.add('note-done');
+            else wrapper.classList.remove('note-done');
+        });
+        wrapper.appendChild(checkbox);
+        if (note.checked) wrapper.classList.add('note-done');
+    }
+
+    // Editable Content Box
+    const contentBox = document.createElement('div');
+    contentBox.className = 'note-content';
+    contentBox.setAttribute('contenteditable', 'true'); 
+    
+    if (note.type === 'markdown') {
+        if (note.isEditing) {
+            contentBox.textContent = note.content;
+            contentBox.focus();
+        } else {
+            contentBox.setAttribute('contenteditable', 'false');
+            contentBox.className += ' markdown-view';
+            const raw = note.content || '...';
+            contentBox.innerHTML = window.DOMPurify ? DOMPurify.sanitize(marked.parse(raw)) : marked.parse(raw);
+            contentBox.addEventListener('click', () => {
+                note.isEditing = true;
+                renderAllNotes();
+                setTimeout(() => focusNote(note.id), 0);
+            });
+        }
+    } 
+    else if (note.type === 'image') {
+        contentBox.textContent = note.content || 'Paste Image URL here...';
+        if (note.content) {
+            const img = document.createElement('img');
+            img.src = note.content;
+            img.className = 'note-image-preview';
+            img.onerror = () => { img.style.display = 'none'; };
+            wrapper.appendChild(img);
+        }
+    } 
+    else {
+        contentBox.textContent = note.content;
+    }
+
+    if (contentBox.getAttribute('contenteditable') === 'true') {
+        contentBox.addEventListener('keydown', handleKeydown);
+        contentBox.addEventListener('input', (e) => {
+            updateNoteData(note.id, { content: e.target.innerText });
+        });
+        if (note.type === 'markdown') {
+            contentBox.addEventListener('blur', () => {
+                note.isEditing = false;
+                renderAllNotes();
+            });
+        }
+    }
+
+    wrapper.appendChild(contentBox);
+}
+
 function renderNoteTree(notes, parentEl, depth = 0) {
     if (!notes || notes.length === 0) return;
     const repliesContainer = document.createElement('div');
     repliesContainer.className = 'replies';
     parentEl.appendChild(repliesContainer);
+
     notes.forEach(note => {
-        // Skip rendering the metadata property
-        if (note === notesData.metadata) return; 
+        if (note === notesData.metadata) return;
 
         const noteEl = document.createElement('div');
         noteEl.className = 'note';
-        noteEl.dataset.id = note.id; 
+        noteEl.dataset.id = note.id;
         noteEl.dataset.depth = depth;
-        const contentEl = document.createElement('div');
-        contentEl.className = 'note-content';
-        contentEl.setAttribute('contenteditable', 'true');
-        contentEl.textContent = note.content;
-        contentEl.addEventListener('keydown', handleKeydown);
-        contentEl.addEventListener('blur', (e) => updateNoteContent(note.id, e.target.textContent));
-        noteEl.appendChild(contentEl);
-        repliesContainer.appendChild(noteEl);
+
+        // NEW: Flex Row
+        const noteRow = document.createElement('div');
+        noteRow.className = 'note-row';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'note-content-wrapper';
+        wrapper.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const types = ['text', 'markdown', 'todo', 'image'];
+            const nextType = types[(types.indexOf(note.type || 'text') + 1) % types.length];
+            updateNoteData(note.id, { type: nextType });
+            renderAllNotes();
+        });
+
+        renderNoteContent(note, wrapper);
+        noteRow.appendChild(wrapper);
+
+        // NEW: Right-Side Controls Container
+        const controls = document.createElement('div');
+        controls.className = 'node-controls';
+
+        // 1. Badge
+        const badgeTxt = getTypeBadge(note.type);
+        if (badgeTxt) {
+            const badge = document.createElement('span');
+            badge.className = 'type-badge';
+            badge.textContent = badgeTxt;
+            badge.title = `Type: ${note.type} (Right-click note to change)`;
+            controls.appendChild(badge);
+        }
+
+        // 2. Toggle (Collapse)
         if (note.children && note.children.length > 0) {
+            const toggle = document.createElement('button');
+            toggle.className = 'toggle-btn';
+            toggle.innerHTML = note.collapsed ? '&#9664;' : '&#9660;'; // Left-pointing or Down-pointing
+            toggle.title = note.collapsed ? "Expand" : "Collapse";
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                updateNoteData(note.id, { collapsed: !note.collapsed });
+                renderAllNotes();
+            });
+            controls.appendChild(toggle);
+        }
+
+        noteRow.appendChild(controls);
+        noteEl.appendChild(noteRow);
+        repliesContainer.appendChild(noteEl);
+
+        // Render Children
+        if (note.children && note.children.length > 0 && !note.collapsed) {
             renderNoteTree(note.children, noteEl, depth + 1);
         }
     });
@@ -412,112 +462,102 @@ function renderAllNotes() {
     const container = document.getElementById('note-container');
     container.innerHTML = ''; 
     notesData.forEach(rootNote => {
-        // Skip rendering the metadata property
         if (rootNote === notesData.metadata) return; 
 
         const rootEl = document.createElement('div');
         rootEl.className = 'note root-note'; 
         rootEl.dataset.id = rootNote.id;
         rootEl.dataset.depth = 0;
-        const contentEl = document.createElement('div');
-        contentEl.className = 'note-content';
-        contentEl.setAttribute('contenteditable', 'true');
-        contentEl.textContent = rootNote.content;
-        contentEl.addEventListener('keydown', handleKeydown);
-        contentEl.addEventListener('blur', (e) => updateNoteContent(rootNote.id, e.target.textContent));
-        rootEl.appendChild(contentEl);
-        container.appendChild(rootEl);
+
+        const noteRow = document.createElement('div');
+        noteRow.className = 'note-row';
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'note-content-wrapper';
+        wrapper.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const types = ['text', 'markdown', 'todo', 'image'];
+            const nextType = types[(types.indexOf(rootNote.type || 'text') + 1) % types.length];
+            updateNoteData(rootNote.id, { type: nextType });
+            renderAllNotes();
+        });
+
+        renderNoteContent(rootNote, wrapper);
+        noteRow.appendChild(wrapper);
+
+        // Controls
+        const controls = document.createElement('div');
+        controls.className = 'node-controls';
+        
+        const badgeTxt = getTypeBadge(rootNote.type);
+        if (badgeTxt) {
+            const badge = document.createElement('span');
+            badge.className = 'type-badge';
+            badge.textContent = badgeTxt;
+            controls.appendChild(badge);
+        }
+
         if (rootNote.children && rootNote.children.length > 0) {
+            const toggle = document.createElement('button');
+            toggle.className = 'toggle-btn';
+            toggle.innerHTML = rootNote.collapsed ? '&#9664;' : '&#9660;';
+            toggle.addEventListener('click', (e) => {
+                updateNoteData(rootNote.id, { collapsed: !rootNote.collapsed });
+                renderAllNotes();
+            });
+            controls.appendChild(toggle);
+        }
+
+        noteRow.appendChild(controls);
+        rootEl.appendChild(noteRow);
+        
+        container.appendChild(rootEl);
+        if (rootNote.children && rootNote.children.length > 0 && !rootNote.collapsed) {
             renderNoteTree(rootNote.children, rootEl, 1);
         }
     });
 }
 
-// --- KEYBOARD INTERACTION HANDLER ---
-
+// --- Key Handler ---
 function handleArrowNavigation(event, direction) {
-    saveCurrentNote(); 
-    
-    let targetNoteEl;
     const allNotes = Array.from(document.querySelectorAll('.note-content'));
     const currentIndex = allNotes.findIndex(el => el === event.target);
-
     if (currentIndex === -1) return;
-
-    if (direction === 'down') {
-        if (currentIndex < allNotes.length - 1) {
-            targetNoteEl = allNotes[currentIndex + 1];
-        }
-    } else if (direction === 'up') {
-        if (currentIndex > 0) {
-            targetNoteEl = allNotes[currentIndex - 1];
-        }
-    }
-
-    if (targetNoteEl) {
+    let target;
+    if (direction === 'down' && currentIndex < allNotes.length - 1) target = allNotes[currentIndex + 1];
+    if (direction === 'up' && currentIndex > 0) target = allNotes[currentIndex - 1];
+    if (target) {
         event.preventDefault();
-        targetNoteEl.focus();
-        
-        if (window.getSelection && document.createRange) {
-            const range = document.createRange();
-            range.selectNodeContents(targetNoteEl);
-            range.collapse(false); 
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-        }
+        target.focus();
     }
 }
-
 
 function handleKeydown(event) {
-    // Handle Ctrl + Arrow Key Traversal
     if (event.key === 'ArrowUp' && (event.ctrlKey || event.metaKey)) {
-        handleArrowNavigation(event, 'up');
-        return;
+        handleArrowNavigation(event, 'up'); return;
     }
     if (event.key === 'ArrowDown' && (event.ctrlKey || event.metaKey)) {
-        handleArrowNavigation(event, 'down');
-        return;
+        handleArrowNavigation(event, 'down'); return;
     }
-
-    // Escape key closes menu
-    if (event.key === 'Escape') {
-        const appMenu = document.getElementById('app-menu');
-        if (appMenu) appMenu.style.display = 'none';
-        return;
-    }
-    
+    if (event.key === 'Enter' && event.shiftKey) return; 
     if (event.key !== 'Enter' && event.key !== 'Tab') return;
-    
-    event.preventDefault(); 
-    
+    event.preventDefault();
     const currentNoteEl = event.target.closest('.note');
     const noteId = currentNoteEl.dataset.id;
-    let currentDepth = parseInt(currentNoteEl.dataset.depth);
+    const currentDepth = parseInt(currentNoteEl.dataset.depth);
 
-    // 1. ENTER KEY
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter') {
         addNewSibling(noteId);
-    } 
-    
-    // 2. TAB KEY
-    else if (event.key === 'Tab') {
+    } else if (event.key === 'Tab') {
         if (event.shiftKey) {
-            if (currentDepth >= 0) { 
-                 decreaseNoteDepth(noteId);
-            }
+            if (currentDepth >= 0) decreaseNoteDepth(noteId);
         } else {
-            if (currentDepth < MAX_DEPTH) {
-                increaseNoteDepth(noteId);
-            }
+            if (currentDepth < MAX_DEPTH) increaseNoteDepth(noteId);
         }
     }
 }
 
-
-// --- INITIALIZATION & Event Listeners ---
-
+// --- Init ---
 function setupCustomThemeListeners() {
     const themeSelector = document.getElementById('theme-selector');
     const builder = document.getElementById('custom-theme-builder');
@@ -526,21 +566,18 @@ function setupCustomThemeListeners() {
         '--main-bg': document.getElementById('color-bg'),
         '--main-text': document.getElementById('color-text'),
         '--branch-line': document.getElementById('color-line'),
+        '--note-bg': document.getElementById('color-note-bg'),
     };
 
     if (!themeSelector) return;
     
-    // Show/Hide Customizer on selection change
     themeSelector.addEventListener('change', (e) => {
         const newTheme = e.target.value;
         const isCustom = newTheme === 'custom-theme';
-        
         localStorage.setItem('appTheme', newTheme); 
         CURRENT_THEME = newTheme;
         applyTheme(newTheme);
-        
         if (builder) builder.style.display = isCustom ? 'block' : 'none';
-        
         if (isCustom) {
             for (const [prop, input] of Object.entries(colorInputs)) {
                 if(input) input.value = CUSTOM_THEME_VARS[prop];
@@ -551,7 +588,6 @@ function setupCustomThemeListeners() {
     themeSelector.value = CURRENT_THEME;
     if (builder) builder.style.display = (CURRENT_THEME === 'custom-theme') ? 'block' : 'none';
 
-    // Live color application during customization
     for (const [prop, input] of Object.entries(colorInputs)) {
         if(input) input.addEventListener('input', (e) => {
             document.documentElement.style.setProperty(prop, e.target.value);
@@ -559,39 +595,25 @@ function setupCustomThemeListeners() {
         });
     }
 
-    // Save button logic
     if (saveBtn) saveBtn.addEventListener('click', () => {
         localStorage.setItem('customThemeVars', JSON.stringify(CUSTOM_THEME_VARS));
-        alert("Custom theme saved! It will persist across sessions.");
+        alert("Theme saved.");
     });
 }
 
-
 document.addEventListener('DOMContentLoaded', () => {
     loadNotes(); 
-    
-    // Menu Logic
     const menuBtn = document.getElementById('menu-btn');
     const appMenu = document.getElementById('app-menu');
     const closeMenuBtn = document.getElementById('close-menu-btn');
     const exportBtn = document.getElementById('export-btn');
     const importBtn = document.getElementById('import-btn');
     const importFile = document.getElementById('import-file');
-    
     setupCustomThemeListeners(); 
 
-    if (menuBtn && appMenu && closeMenuBtn) {
-        menuBtn.addEventListener('click', () => {
-            appMenu.style.display = 'block';
-        });
-        closeMenuBtn.addEventListener('click', () => {
-            appMenu.style.display = 'none';
-        });
-    }
-
-    // Data Transfer Listeners
+    if (menuBtn) menuBtn.addEventListener('click', () => appMenu.style.display = 'block');
+    if (closeMenuBtn) closeMenuBtn.addEventListener('click', () => appMenu.style.display = 'none');
     if (exportBtn) exportBtn.addEventListener('click', handleExport);
-    // Note: The import button now accepts any file, but the handler checks for .wote
-    if (importBtn && importFile) importBtn.addEventListener('click', () => importFile.click());
+    if (importBtn) importBtn.addEventListener('click', () => importFile.click());
     if (importFile) importFile.addEventListener('change', handleImport);
 });

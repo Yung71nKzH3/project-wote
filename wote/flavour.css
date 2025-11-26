@@ -2,9 +2,8 @@
 /* 1. CSS Variables (Custom Properties) Definitions     */
 /* ---------------------------------------------------- */
 
-/* Root element defines the variables used by all themes */
 :root {
-    /* **NEW "SWAMP WILLOW" THEME DEFAULTS** */
+    /* **SWAMP WILLOW THEME DEFAULTS** */
     --main-bg: #2C3424;       
     --main-text: #DADED8;       
     --branch-line: #959581; 
@@ -18,121 +17,152 @@
 
 .note-area {
     padding: 20px;
+    /* Ensure right side has space */
+    padding-right: 40px; 
 }
 
 .note {
     margin-bottom: 10px;
-    padding-bottom: 5px;
-    position: relative;
+    position: relative; 
 }
 
 body {
     font-family: 'Libre Baskerville', serif; 
     transition: background-color 0.3s, color 0.3s;
-    /* Base colors MUST use variables */
     background-color: var(--main-bg); 
     color: var(--main-text); 
+}
+
+/* NEW: Flex container for the note row */
+.note-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+/* Wrapper holds the actual content */
+.note-content-wrapper {
+    flex-grow: 1; /* Takes up all available space */
+    display: flex;
+    flex-direction: column; /* Stacks image preview below text */
 }
 
 .note-content {
     padding: 8px 10px;
     border-radius: 5px;
-    /* Base colors MUST use variables */
     background-color: var(--note-bg);
     color: var(--main-text);
-    
     outline: none;
     min-height: 1.2em;
+    word-wrap: break-word;
+    width: 100%; /* Ensure it fills wrapper */
+    box-sizing: border-box;
 }
 
 .note-content:focus {
-    /* Uses variable */
     box-shadow: 0 0 0 2px var(--input-focus);
 }
 
 .replies {
     margin-left: 20px;
-    /* Uses variable */
     border-left: 2px solid var(--branch-line); 
     padding-left: 10px;
+    transition: all 0.2s ease;
+    margin-top: 5px;
 }
 
-.reply-button, .save-button {
-    font-size: 0.8em;
+.replies.hidden {
+    display: none;
+}
+
+/* --- RIGHT SIDE CONTROLS --- */
+
+.node-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 8px; /* Align with text */
+    min-width: 60px; /* Prevent squishing */
+    justify-content: flex-end;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.note-row:hover .node-controls {
+    opacity: 1;
+}
+
+/* Type Badge (TXT, MD, IMG, etc) */
+.type-badge {
+    font-size: 0.7em;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.2);
+    cursor: help;
+    user-select: none;
+}
+
+/* Toggle Button (Collapse) */
+.toggle-btn {
+    background: none;
+    border: none;
+    color: var(--branch-line);
     cursor: pointer;
-    margin-right: 10px;
-    /* Uses variable */
-    color: var(--main-text); 
+    font-size: 14px;
+    padding: 0;
+    width: 20px;
+    text-align: center;
 }
 
-/* ---------------------------------------------------- */
-/* 3. THEME BLOCKS (Sets Variables via Classes)         */
-/* ---------------------------------------------------- */
-
-/* Willow Default Theme - Applies the new swampy defaults */
-.willow-theme {
-    background-color: var(--main-bg);
+.toggle-btn:hover {
     color: var(--main-text);
+    transform: scale(1.2);
 }
 
-/* Dark Theme Overrides - Remains the same */
+/* --- NODE SPECIFIC STYLES --- */
+
+.note-checkbox {
+    margin: 10px 0 5px 0; 
+    transform: scale(1.3);
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+.note-done .note-content {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.note-image-preview {
+    display: block;
+    max-width: 100%;
+    margin-top: 10px;
+    border-radius: 4px;
+    border: 1px solid var(--branch-line);
+    align-self: flex-start;
+}
+
+.markdown-view p { margin: 0; }
+.markdown-view h1, .markdown-view h2, .markdown-view h3 { margin: 5px 0; font-size: 1.1em; font-weight: bold; border-bottom: 1px solid var(--branch-line); }
+.markdown-view ul, .markdown-view ol { margin: 5px 0; padding-left: 20px; }
+.markdown-view code { background: rgba(0,0,0,0.2); padding: 2px 4px; border-radius: 3px; font-family: monospace; }
+.markdown-view blockquote { border-left: 3px solid var(--branch-line); padding-left: 10px; margin: 5px 0; font-style: italic; }
+
+/* THEMES */
+.willow-theme {}
 .dark-theme {
     --main-bg: #1e1e1e;          
     --main-text: #e0e0e0;        
     --branch-line: #777;         
     --note-bg: #333333;          
     --input-focus: #555; 
-    
-    background-color: var(--main-bg);
-    color: var(--main-text);
 }
+.custom-theme {}
 
-/* Custom Theme Block */
-.custom-theme {
-    background-color: var(--main-bg);
-    color: var(--main-text);
-}
-
-
-/* ---------------------------------------------------- */
-/* 4. MENU/HEADER STYLING (ISOLATED COLORS)             */
-/* ---------------------------------------------------- */
-
-#app-header {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-}
-
-#menu-btn {
-    background: #4B5320; 
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 1.2em;
-    cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-#app-menu {
-    position: fixed;
-    top: 50px;
-    right: 10px;
-    width: 300px;
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(5px);
-    border: 1px solid #c8c8c8; 
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 999;
-    transition: opacity 0.3s ease;
-    color: #333; 
-}
-
-#app-menu h3, #app-menu p, #app-menu label {
-    color: #333; 
-}
+/* MENU */
+#app-header { position: fixed; top: 10px; right: 10px; z-index: 1000; }
+#menu-btn { background: #4B5320; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.2em; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+#app-menu { position: fixed; top: 50px; right: 10px; width: 300px; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); border: 1px solid #c8c8c8; border-radius: 8px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 999; color: #333; }
+#app-menu h3, #app-menu p, #app-menu label { color: #333; }
